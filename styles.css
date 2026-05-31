@@ -16,6 +16,11 @@
 
 * { box-sizing: border-box; }
 
+/* Force the `hidden` attribute to always win. Author `display` rules (e.g.
+   .screen { display:flex }) otherwise override the browser's [hidden] rule,
+   which would leave every screen rendered at once and break navigation. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
