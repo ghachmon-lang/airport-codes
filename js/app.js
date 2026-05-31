@@ -25,6 +25,12 @@
 
   // --- Element helpers ---------------------------------------------------
   const $ = (id) => document.getElementById(id);
+  // Null-safe event binding: a single missing element can never break the rest
+  // of the wiring (e.g. during a stale-cache mismatch between HTML and JS).
+  function on(id, event, handler) {
+    const el = $(id);
+    if (el) el.addEventListener(event, handler);
+  }
   const screens = ["home", "study", "summary", "settings"];
   function show(screen) {
     screens.forEach((s) => ($(s).hidden = s !== screen));
@@ -178,17 +184,17 @@
   }
 
   function wireSettings() {
-    $("new-limit").addEventListener("change", (e) => {
+    on("new-limit", "change", (e) => {
       const v = parseInt(e.target.value, 10);
       state.settings.newLimit = Number.isFinite(v) ? Math.max(0, Math.min(80, v)) : 12;
       e.target.value = state.settings.newLimit;
       Store.saveState(state);
     });
 
-    $("export-btn").addEventListener("click", () => Store.exportState(state));
+    on("export-btn", "click", () => Store.exportState(state));
 
-    $("import-btn").addEventListener("click", () => $("import-file").click());
-    $("import-file").addEventListener("change", async (e) => {
+    on("import-btn", "click", () => $("import-file").click());
+    on("import-file", "change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       try {
@@ -206,7 +212,7 @@
       }
     });
 
-    $("reset-btn").addEventListener("click", () => {
+    on("reset-btn", "click", () => {
       if (!confirm("Reset ALL progress? This can't be undone.")) return;
       state = Store.resetState();
       state.items = Srs.buildItems(AIRPORTS, {});
@@ -217,29 +223,29 @@
 
   // --- Event wiring ------------------------------------------------------
   function wire() {
-    $("start-btn").addEventListener("click", startSession);
-    $("again-btn").addEventListener("click", startSession);
-    $("home-btn").addEventListener("click", renderHome);
-    $("end-session-btn").addEventListener("click", endSession);
+    on("start-btn", "click", startSession);
+    on("again-btn", "click", startSession);
+    on("home-btn", "click", renderHome);
+    on("end-session-btn", "click", endSession);
 
-    $("card").addEventListener("click", flipCard);
-    $("card").addEventListener("keydown", (e) => {
+    on("card", "click", flipCard);
+    on("card", "keydown", (e) => {
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         flipCard();
       }
     });
-    $("got-btn").addEventListener("click", () => gradeCurrent(true));
-    $("miss-btn").addEventListener("click", () => gradeCurrent(false));
+    on("got-btn", "click", () => gradeCurrent(true));
+    on("miss-btn", "click", () => gradeCurrent(false));
 
-    $("scope-select").addEventListener("change", (e) => {
+    on("scope-select", "change", (e) => {
       state.settings.scope = e.target.value;
       Store.saveState(state);
       renderHome();
     });
 
-    $("settings-btn").addEventListener("click", renderSettings);
-    $("settings-back-btn").addEventListener("click", renderHome);
+    on("settings-btn", "click", renderSettings);
+    on("settings-back-btn", "click", renderHome);
     wireSettings();
 
     // Desktop keyboard shortcuts: space = flip, 1 = missed, 2 = got.

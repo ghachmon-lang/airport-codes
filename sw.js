@@ -4,7 +4,7 @@
  * Caches the app shell so the trainer loads even with no signal (e.g. on a plane).
  * Bump CACHE_VERSION whenever the app files change to push an update to devices.
  */
-const CACHE_VERSION = "airport-trainer-v2";
+const CACHE_VERSION = "airport-trainer-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -33,10 +33,18 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Cache-first for the app shell; fall back to network otherwise.
+// Network-first: always prefer fresh files when online (so updates land
+// immediately and HTML/JS never drift out of sync), and fall back to the
+// cached copy when offline. Successful responses refresh the cache.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).catch(() => cached))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
