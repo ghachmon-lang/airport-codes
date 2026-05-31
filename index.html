@@ -20,6 +20,8 @@
       <section id="home" class="screen">
         <p class="tagline">United destinations · adaptive flashcards</p>
 
+        <div class="streak" id="streak-chip"></div>
+
         <div class="stats" id="stats">
           <div class="stat"><span class="stat-num" id="stat-due">0</span><span class="stat-label">Due now</span></div>
           <div class="stat"><span class="stat-num" id="stat-new">0</span><span class="stat-label">New</span></div>
@@ -31,6 +33,16 @@
           <div class="progress-fill" id="mastery-bar"></div>
         </div>
         <p class="muted" id="mastery-caption"></p>
+
+        <label class="field scope-field">
+          Study set
+          <select id="scope-select">
+            <option value="all">All destinations</option>
+            <option value="Hub">Hubs only (8)</option>
+            <option value="Domestic">Domestic only</option>
+            <option value="International">International only</option>
+          </select>
+        </label>
 
         <button id="start-btn" class="primary big">Start studying</button>
         <p class="muted" id="nothing-due" hidden>

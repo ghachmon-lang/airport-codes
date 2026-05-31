@@ -4,7 +4,7 @@
  * Caches the app shell so the trainer loads even with no signal (e.g. on a plane).
  * Bump CACHE_VERSION whenever the app files change to push an update to devices.
  */
-const CACHE_VERSION = "airport-trainer-v1";
+const CACHE_VERSION = "airport-trainer-v2";
 const APP_SHELL = [
   "./",
   "./index.html",

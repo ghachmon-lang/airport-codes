@@ -30,9 +30,29 @@
     screens.forEach((s) => ($(s).hidden = s !== screen));
   }
 
+  // The set of codes allowed by the current study-set scope (null = all).
+  function allowedCodes() {
+    const scope = state.settings.scope || "all";
+    if (scope === "all") return null;
+    return new Set(AIRPORTS.filter((a) => a.region === scope).map((a) => a.code));
+  }
+
+  function renderStreak() {
+    const st = state.streak || { count: 0, best: 0 };
+    const chip = $("streak-chip");
+    if (st.count > 0) {
+      chip.textContent =
+        `🔥 ${st.count}-day streak` + (st.best > st.count ? ` · best ${st.best}` : "");
+    } else {
+      chip.textContent = "Study today to start a streak 🔥";
+    }
+  }
+
   // --- Home / stats ------------------------------------------------------
   function renderHome() {
-    const s = Srs.summarize(state.items);
+    renderStreak();
+    $("scope-select").value = state.settings.scope || "all";
+    const s = Srs.summarize(state.items, Date.now(), allowedCodes());
     $("stat-due").textContent = s.dueNow;
     $("stat-new").textContent = s.new;
     $("stat-learning").textContent = s.learning;
@@ -50,13 +70,15 @@
 
   // --- Session flow ------------------------------------------------------
   function startSession() {
+    const allow = allowedCodes();
     const queue = Srs.buildSessionQueue(state.items, {
       newLimit: state.settings.newLimit,
+      allowCodes: allow,
     });
     if (queue.length === 0) {
       // Nothing due and no new cards: offer a quick refresher of the soonest items.
       const soonest = Object.values(state.items)
-        .filter((it) => !Srs.isNew(it))
+        .filter((it) => !Srs.isNew(it) && (!allow || allow.has(it.code)))
         .sort((a, b) => a.due - b.due)
         .slice(0, 20)
         .map((it) => it.id);
@@ -121,6 +143,9 @@
 
     session.reviewed++;
     correct ? session.got++ : session.missed++;
+
+    // Reviewing a card counts today toward her daily streak (idempotent per day).
+    state.streak = Srs.bumpStreak(state.streak, Date.now());
 
     // A missed card gets requeued later in THIS session so she drills it now.
     if (!correct) {
@@ -206,6 +231,12 @@
     });
     $("got-btn").addEventListener("click", () => gradeCurrent(true));
     $("miss-btn").addEventListener("click", () => gradeCurrent(false));
+
+    $("scope-select").addEventListener("change", (e) => {
+      state.settings.scope = e.target.value;
+      Store.saveState(state);
+      renderHome();
+    });
 
     $("settings-btn").addEventListener("click", renderSettings);
     $("settings-back-btn").addEventListener("click", renderHome);

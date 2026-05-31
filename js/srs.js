@@ -137,8 +137,9 @@ function grade(item, correct, now = Date.now()) {
  *   - Then new items, up to `newLimit`, to grow her deck gradually.
  * Returns an array of item ids in the order they should be shown.
  */
-function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12 } = {}) {
-  const all = Object.values(itemsById);
+function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12, allowCodes = null } = {}) {
+  let all = Object.values(itemsById);
+  if (allowCodes) all = all.filter((it) => allowCodes.has(it.code)); // study-set filter
 
   const due = all
     .filter((it) => isDue(it, now))
@@ -150,8 +151,9 @@ function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12 } = {}) 
 }
 
 // Counts for the home/stats screen.
-function summarize(itemsById, now = Date.now()) {
-  const all = Object.values(itemsById);
+function summarize(itemsById, now = Date.now(), allowCodes = null) {
+  let all = Object.values(itemsById);
+  if (allowCodes) all = all.filter((it) => allowCodes.has(it.code)); // stats for the chosen study set
   let dueNow = 0,
     learning = 0,
     mastered = 0,
@@ -163,6 +165,28 @@ function summarize(itemsById, now = Date.now()) {
     if (isDue(it, now)) dueNow++;
   }
   return { total: all.length, dueNow, learning, mastered, new: fresh };
+}
+
+// --- Daily streak -------------------------------------------------------
+// A "study day" is a local calendar day on which she reviewed at least one card.
+
+// Whole-day index in LOCAL time (DST-safe: built from local Y/M/D at UTC midnight).
+function localDayIndex(ts) {
+  const d = new Date(ts);
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / SRS.DAY_MS);
+}
+
+// Given the previous streak and "now", return the updated streak.
+//   - same day        -> unchanged (counts once per day)
+//   - the next day     -> +1
+//   - a gap (or first) -> resets to 1
+function bumpStreak(streak, now = Date.now()) {
+  const prev = streak || { count: 0, best: 0, lastDay: null };
+  const today = localDayIndex(now);
+  if (prev.lastDay === today) return prev;
+  const count = prev.lastDay === today - 1 ? prev.count + 1 : 1;
+  const best = Math.max(prev.best || 0, count);
+  return { count, best, lastDay: today };
 }
 
 // Export for both browser (<script>) and Node (tests).
@@ -179,6 +203,8 @@ const SRS_API = {
   grade,
   buildSessionQueue,
   summarize,
+  localDayIndex,
+  bumpStreak,
 };
 
 if (typeof module !== "undefined" && module.exports) {

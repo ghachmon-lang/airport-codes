@@ -10,7 +10,10 @@ const STORAGE_KEY = "united-airport-trainer.v1";
 
 const DEFAULT_SETTINGS = {
   newLimit: 12, // how many new cards to introduce per session
+  scope: "all", // which study set: "all" | "Hub" | "Domestic" | "International"
 };
+
+const DEFAULT_STREAK = { count: 0, best: 0, lastDay: null };
 
 // Read the saved blob, or a fresh default if nothing is stored / it's corrupt.
 function loadState() {
@@ -22,6 +25,7 @@ function loadState() {
       version: 1,
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
       items: parsed.items || {},
+      streak: { ...DEFAULT_STREAK, ...(parsed.streak || {}) },
     };
   } catch (err) {
     console.warn("Could not read saved progress, starting fresh.", err);
@@ -30,7 +34,7 @@ function loadState() {
 }
 
 function freshState() {
-  return { version: 1, settings: { ...DEFAULT_SETTINGS }, items: {} };
+  return { version: 1, settings: { ...DEFAULT_SETTINGS }, items: {}, streak: { ...DEFAULT_STREAK } };
 }
 
 function saveState(state) {
@@ -76,6 +80,7 @@ function parseImported(text) {
     version: 1,
     settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
     items: parsed.items,
+    streak: { ...DEFAULT_STREAK, ...(parsed.streak || {}) },
   };
 }
 

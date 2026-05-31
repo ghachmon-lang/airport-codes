@@ -86,6 +86,36 @@ test("session queue serves due items first, then caps new items", () => {
   assert.strictEqual(q.length, 1 + 5, "1 due + 5 new");
 });
 
+test("study-set filter limits the queue and stats to allowed codes", () => {
+  const items = Srs.buildItems(AIRPORTS);
+  const hubCodes = new Set(AIRPORTS.filter((a) => a.region === "Hub").map((a) => a.code));
+
+  const q = Srs.buildSessionQueue(items, { now, newLimit: 100, allowCodes: hubCodes });
+  assert.ok(q.length > 0);
+  assert.ok(q.every((id) => hubCodes.has(items[id].code)), "only hub cards in the queue");
+
+  const s = Srs.summarize(items, now, hubCodes);
+  assert.strictEqual(s.total, hubCodes.size * 2, "two directions per hub");
+});
+
+test("daily streak: increments on consecutive days, resets after a gap", () => {
+  const DAY = Srs.SRS.DAY_MS;
+  const base = Date.UTC(2026, 5, 10, 15, 0, 0); // mid-month, mid-day (avoids edge cases)
+
+  let s = Srs.bumpStreak({ count: 0, best: 0, lastDay: null }, base);
+  assert.strictEqual(s.count, 1);
+
+  s = Srs.bumpStreak(s, base + 3 * 60 * 60 * 1000); // same day -> unchanged
+  assert.strictEqual(s.count, 1);
+
+  s = Srs.bumpStreak(s, base + DAY); // next day -> 2
+  assert.strictEqual(s.count, 2);
+
+  s = Srs.bumpStreak(s, base + 3 * DAY); // skipped a day -> reset to 1, best kept
+  assert.strictEqual(s.count, 1);
+  assert.strictEqual(s.best, 2);
+});
+
 test("summarize counts add up to the total", () => {
   const items = Srs.buildItems(AIRPORTS);
   const s = Srs.summarize(items, now);
