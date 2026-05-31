@@ -191,7 +191,26 @@ function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12, allowCo
   if (allowCodes) all = all.filter((it) => allowCodes.has(it.code)); // study-set filter
 
   const due = all.filter((it) => isDue(it, now));
-  const fresh = all.filter(isNew).slice(0, Math.max(0, newLimit));
+
+  // New cards: introduce a RANDOM set of airports each session (not always the
+  // same ones in data order), keeping an airport's directions together for
+  // selection, then capping at `newLimit` cards.
+  const newByCode = new Map();
+  for (const it of all) {
+    if (!isNew(it)) continue;
+    const a = newByCode.get(it.code);
+    if (a) a.push(it);
+    else newByCode.set(it.code, [it]);
+  }
+  const fresh = [];
+  const cap = Math.max(0, newLimit);
+  for (const code of shuffle([...newByCode.keys()], rng)) {
+    for (const it of newByCode.get(code)) {
+      if (fresh.length >= cap) break;
+      fresh.push(it);
+    }
+    if (fresh.length >= cap) break;
+  }
 
   const ordered = [...spreadDirections(due, rng), ...spreadDirections(fresh, rng)];
   fixAdjacency(ordered); // also breaks any same-code pair at the due→new seam
