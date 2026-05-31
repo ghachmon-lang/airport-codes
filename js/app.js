@@ -82,14 +82,14 @@
       allowCodes: allow,
     });
     if (queue.length === 0) {
-      // Nothing due and no new cards: offer a quick refresher of the soonest items.
+      // Nothing due and no new cards: offer a quick refresher of the soonest items,
+      // shuffled with directions separated (same as a normal session).
       const soonest = Object.values(state.items)
         .filter((it) => !Srs.isNew(it) && (!allow || allow.has(it.code)))
         .sort((a, b) => a.due - b.due)
-        .slice(0, 20)
-        .map((it) => it.id);
+        .slice(0, 20);
       if (soonest.length === 0) return renderHome();
-      session = newSession(soonest);
+      session = newSession(Srs.arrangeStudyOrder(soonest));
     } else {
       session = newSession(queue);
     }

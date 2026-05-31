@@ -86,6 +86,32 @@ test("session queue serves due items first, then caps new items", () => {
   assert.strictEqual(q.length, 1 + 5, "1 due + 5 new");
 });
 
+// Tiny seeded PRNG so shuffle-based tests are deterministic.
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+test("the two directions of an airport are never adjacent in a session", () => {
+  const items = Srs.buildItems(AIRPORTS);
+  const q = Srs.buildSessionQueue(items, { now, newLimit: 40, rng: mulberry32(98765) });
+  assert.ok(q.length === 40, "40 new cards queued");
+  for (let i = 1; i < q.length; i++) {
+    assert.notStrictEqual(
+      items[q[i]].code,
+      items[q[i - 1]].code,
+      `adjacent cards share airport ${items[q[i]].code} at position ${i}`
+    );
+  }
+  // Passing the adjacency check already proves it isn't the raw paired data
+  // order (which has each airport's two directions next to each other).
+});
+
 test("study-set filter limits the queue and stats to allowed codes", () => {
   const items = Srs.buildItems(AIRPORTS);
   const hubCodes = new Set(AIRPORTS.filter((a) => a.region === "Hub").map((a) => a.code));

@@ -131,23 +131,71 @@ function grade(item, correct, now = Date.now()) {
   return next;
 }
 
+// In-place Fisher–Yates shuffle (rng injectable so tests are deterministic).
+function shuffle(arr, rng = Math.random) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Spread items so the two directions of the same airport land far apart:
+// split each airport's directions across two halves, then shuffle each half.
+function spreadDirections(items, rng = Math.random) {
+  const byCode = new Map();
+  for (const it of items) {
+    const a = byCode.get(it.code);
+    if (a) a.push(it);
+    else byCode.set(it.code, [it]);
+  }
+  const firstHalf = [];
+  const secondHalf = [];
+  for (const dirs of byCode.values()) {
+    shuffle(dirs, rng); // randomize which direction goes early vs late
+    dirs.forEach((it, i) => (i % 2 === 0 ? firstHalf : secondHalf).push(it));
+  }
+  return [...shuffle(firstHalf, rng), ...shuffle(secondHalf, rng)];
+}
+
+// Guarantee no two neighbours share an airport code (fixes the half/section seams).
+function fixAdjacency(items) {
+  for (let i = 1; i < items.length; i++) {
+    if (items[i].code === items[i - 1].code) {
+      for (let j = i + 1; j < items.length; j++) {
+        if (items[j].code !== items[i - 1].code) {
+          [items[i], items[j]] = [items[j], items[i]];
+          break;
+        }
+      }
+    }
+  }
+  return items;
+}
+
+// Shuffle a set of items into a study order with directions separated; returns ids.
+function arrangeStudyOrder(items, rng = Math.random) {
+  return fixAdjacency(spreadDirections(items, rng)).map((it) => it.id);
+}
+
 /*
  * Build the queue for a study session.
- *   - All items currently due (most overdue first) so she clears her backlog.
- *   - Then new items, up to `newLimit`, to grow her deck gradually.
+ *   - Items currently due (so she clears her backlog), then new items up to
+ *     `newLimit` to grow her deck gradually.
+ *   - Within each group the two directions of an airport are spread apart and
+ *     never adjacent, so answering DEN→Denver doesn't give away Denver→DEN.
  * Returns an array of item ids in the order they should be shown.
  */
-function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12, allowCodes = null } = {}) {
+function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12, allowCodes = null, rng = Math.random } = {}) {
   let all = Object.values(itemsById);
   if (allowCodes) all = all.filter((it) => allowCodes.has(it.code)); // study-set filter
 
-  const due = all
-    .filter((it) => isDue(it, now))
-    .sort((a, b) => a.due - b.due); // most overdue first
-
+  const due = all.filter((it) => isDue(it, now));
   const fresh = all.filter(isNew).slice(0, Math.max(0, newLimit));
 
-  return [...due.map((it) => it.id), ...fresh.map((it) => it.id)];
+  const ordered = [...spreadDirections(due, rng), ...spreadDirections(fresh, rng)];
+  fixAdjacency(ordered); // also breaks any same-code pair at the due→new seam
+  return ordered.map((it) => it.id);
 }
 
 // Counts for the home/stats screen.
@@ -202,6 +250,7 @@ const SRS_API = {
   statusOf,
   grade,
   buildSessionQueue,
+  arrangeStudyOrder,
   summarize,
   localDayIndex,
   bumpStreak,
