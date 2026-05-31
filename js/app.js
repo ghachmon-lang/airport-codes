@@ -262,12 +262,23 @@
     });
   }
 
-  // --- Service worker (offline) -----------------------------------------
+  // --- Service worker (offline + auto-update) ---------------------------
   if ("serviceWorker" in navigator) {
+    // When a new service worker takes control, reload once so the page and its
+    // scripts are always a matched, fresh set (prevents stale-cache mismatches).
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloaded) return;
+      reloaded = true;
+      window.location.reload();
+    });
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => {
-        /* offline support is optional; ignore failures */
-      });
+      navigator.serviceWorker
+        .register("sw.js")
+        .then((reg) => reg.update()) // check for a newer worker on every load
+        .catch(() => {
+          /* offline support is optional; ignore failures */
+        });
     });
   }
 
