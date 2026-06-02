@@ -114,6 +114,16 @@
     const airport = byCode[item.code];
     session.flipped = false;
 
+    // Per-card progress toward "known": how many correct in a row out of the target.
+    const streakEl = $("card-streak");
+    if (Srs.isMastered(item)) {
+      streakEl.textContent = "✓ Known";
+      streakEl.classList.add("known");
+    } else {
+      streakEl.textContent = `🔥 ${item.reps} / ${Srs.learnTarget(item)}`;
+      streakEl.classList.remove("known");
+    }
+
     const codeToCity = item.dir === "CODE_TO_CITY";
     $("card-dir").textContent = codeToCity ? "Code → Destination" : "Destination → Code";
     $("card-prompt").textContent = codeToCity ? item.code : airport.city;

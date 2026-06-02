@@ -173,6 +173,7 @@ button { font-family: inherit; }
 .session-bar { display: flex; align-items: center; gap: 10px; }
 .card {
   background: var(--card);
+  position: relative;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -189,6 +190,23 @@ button { font-family: inherit; }
   transition: border-color 0.2s ease;
 }
 .card.flipped { border-color: var(--sky); }
+.card-streak {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold);
+  background: #fff7e6;
+  border: 1px solid #f3dca8;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.card-streak.known {
+  color: var(--good);
+  background: #e9f7ef;
+  border-color: #bfe6cd;
+}
 .card-dir {
   text-transform: uppercase;
   letter-spacing: 1.5px;

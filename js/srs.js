@@ -304,6 +304,7 @@ const SRS_API = {
   isNew,
   isDue,
   isMastered,
+  learnTarget,
   statusOf,
   grade,
   isActiveLearning,
