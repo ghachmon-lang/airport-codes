@@ -14,6 +14,9 @@ are only re-checked once in a while to confirm they held. The app adapts as you 
 - **Self-graded flip cards** — read the prompt, think, tap to reveal, then tap
   **Got it** or **Missed it**.
 - **Adaptive scheduling** — focuses on weak cards; spaces out the ones you've mastered.
+- **Curriculum-paced** — teaches hubs first, then major cities, then everything else,
+  adding new destinations only as you get the current ones under control (no fixed
+  per-session count). Tune how many you juggle at once in Settings → "Cards to learn at once".
 - **Works offline** — installable to your phone's home screen (PWA); great on a plane.
 - **Progress saved on your device** — close it and pick up later. Export/import to back
   up or move to another phone.

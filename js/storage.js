@@ -9,7 +9,7 @@
 const STORAGE_KEY = "united-airport-trainer.v1";
 
 const DEFAULT_SETTINGS = {
-  newLimit: 12, // how many new cards to introduce per session
+  maxActive: 16, // how many cards she's actively learning at once (gates new intake)
   scope: "all", // which study set: "all" | "Hub" | "Domestic" | "International"
 };
 

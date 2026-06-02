@@ -14,6 +14,8 @@
 
   // Quick lookup from code -> airport record.
   const byCode = Object.fromEntries(AIRPORTS.map((a) => [a.code, a]));
+  // Curriculum priority per airport (hubs first, then major cities, then rest).
+  const priority = Object.fromEntries(AIRPORTS.map((a) => [a.code, airportTier(a)]));
 
   // --- App state ---------------------------------------------------------
   let state = Store.loadState();
@@ -78,8 +80,9 @@
   function startSession() {
     const allow = allowedCodes();
     const queue = Srs.buildSessionQueue(state.items, {
-      newLimit: state.settings.newLimit,
+      maxActive: state.settings.maxActive,
       allowCodes: allow,
+      priority,
     });
     if (queue.length === 0) {
       // Nothing due and no new cards: offer a quick refresher of the soonest items,
@@ -179,15 +182,15 @@
 
   // --- Settings ----------------------------------------------------------
   function renderSettings() {
-    $("new-limit").value = state.settings.newLimit;
+    $("active-limit").value = state.settings.maxActive;
     show("settings");
   }
 
   function wireSettings() {
-    on("new-limit", "change", (e) => {
+    on("active-limit", "change", (e) => {
       const v = parseInt(e.target.value, 10);
-      state.settings.newLimit = Number.isFinite(v) ? Math.max(0, Math.min(80, v)) : 12;
-      e.target.value = state.settings.newLimit;
+      state.settings.maxActive = Number.isFinite(v) ? Math.max(2, Math.min(120, v)) : 16;
+      e.target.value = state.settings.maxActive;
       Store.saveState(state);
     });
 

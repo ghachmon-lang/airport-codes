@@ -75,15 +75,41 @@ test("buildItems creates two directions per airport and preserves progress", () 
   assert.strictEqual(rebuilt[id].reps, savedReps);
 });
 
-test("session queue serves due items first, then caps new items", () => {
+test("session serves due items first, then new ones up to the active ceiling", () => {
   const items = Srs.buildItems(AIRPORTS);
   // Make one item due in the past.
   const dueId = Srs.itemId("DEN", "CODE_TO_CITY");
   items[dueId] = { ...items[dueId], due: now - DAY, interval: 1, reps: 1 };
 
-  const q = Srs.buildSessionQueue(items, { now, newLimit: 5 });
+  const q = Srs.buildSessionQueue(items, { now, maxActive: 10 });
   assert.strictEqual(q[0], dueId, "due item comes first");
-  assert.strictEqual(q.length, 1 + 5, "1 due + 5 new");
+  // 1 active/due card already, so room for 9 more new -> 1 + 9.
+  assert.strictEqual(q.length, 10, "fills up to the active ceiling");
+});
+
+test("new airports are introduced hubs-first (curriculum order)", () => {
+  const { airportTier } = require("../js/data.js");
+  const priority = Object.fromEntries(AIRPORTS.map((a) => [a.code, airportTier(a)]));
+  const items = Srs.buildItems(AIRPORTS);
+
+  const q = Srs.buildSessionQueue(items, { now, maxActive: 12, priority, rng: mulberry32(1) });
+  assert.strictEqual(q.length, 12);
+  const tiers = q.map((id) => priority[items[id].code]);
+  assert.ok(tiers.every((t) => t === 1), "the first cards introduced are all hubs (tier 1)");
+});
+
+test("new-card intake pauses while she's at the active-learning ceiling", () => {
+  const items = Srs.buildItems(AIRPORTS);
+  // Mark 12 cards as actively learning (started, short interval, not due yet).
+  let marked = 0;
+  for (const id of Object.keys(items)) {
+    if (marked >= 12) break;
+    items[id] = { ...items[id], due: now + DAY, interval: 1, reps: 1 };
+    marked++;
+  }
+  const q = Srs.buildSessionQueue(items, { now, maxActive: 10 });
+  const newCards = q.filter((id) => Srs.isNew(items[id]));
+  assert.strictEqual(newCards.length, 0, "no new cards while over the ceiling");
 });
 
 // Tiny seeded PRNG so shuffle-based tests are deterministic.
@@ -99,7 +125,7 @@ function mulberry32(seed) {
 
 test("the two directions of an airport are never adjacent in a session", () => {
   const items = Srs.buildItems(AIRPORTS);
-  const q = Srs.buildSessionQueue(items, { now, newLimit: 40, rng: mulberry32(98765) });
+  const q = Srs.buildSessionQueue(items, { now, maxActive: 40, rng: mulberry32(98765) });
   assert.ok(q.length === 40, "40 new cards queued");
   for (let i = 1; i < q.length; i++) {
     assert.notStrictEqual(
@@ -116,7 +142,7 @@ test("study-set filter limits the queue and stats to allowed codes", () => {
   const items = Srs.buildItems(AIRPORTS);
   const hubCodes = new Set(AIRPORTS.filter((a) => a.region === "Hub").map((a) => a.code));
 
-  const q = Srs.buildSessionQueue(items, { now, newLimit: 100, allowCodes: hubCodes });
+  const q = Srs.buildSessionQueue(items, { now, maxActive: 100, allowCodes: hubCodes });
   assert.ok(q.length > 0);
   assert.ok(q.every((id) => hubCodes.has(items[id].code)), "only hub cards in the queue");
 

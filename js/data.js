@@ -194,8 +194,34 @@ const AIRPORTS = [
   { code: "AKL", city: "Auckland", country: "New Zealand", region: "International" },
 ];
 
+/*
+ * CURRICULUM PRIORITY — the order new destinations are introduced.
+ *   Tier 1: the hubs (region "Hub")            — learned first
+ *   Tier 2: major cities / flagship gateways   — added next
+ *   Tier 3: everything else                    — added last, as she gains control
+ *
+ * Edit MAJOR_CITIES to move a destination into the "major" group (tier 2).
+ * Anything not a hub and not listed here is tier 3.
+ */
+const MAJOR_CITIES = new Set([
+  // Major US metros
+  "ATL", "BOS", "JFK", "LGA", "DCA", "BWI", "PHL", "MIA", "FLL", "MCO", "TPA",
+  "DFW", "PHX", "LAS", "SAN", "SEA", "PDX", "SLC", "MSP", "DTW", "MDW", "HNL",
+  "CLT", "AUS", "BNA", "STL", "MCI",
+  // Flagship international gateways
+  "LHR", "CDG", "FRA", "MUC", "AMS", "FCO", "MAD", "BCN", "ZRH", "DUB", "LIS",
+  "NRT", "HND", "ICN", "HKG", "SIN", "PVG", "PEK", "SYD", "MEX", "CUN",
+  "YYZ", "YVR", "GRU", "LIM", "BOG", "TLV", "DXB",
+]);
+
+function airportTier(a) {
+  if (a.region === "Hub") return 1;
+  if (MAJOR_CITIES.has(a.code)) return 2;
+  return 3;
+}
+
 // Make the dataset available both as a plain global (for <script> use) and as a
 // module export (handy for tests run under Node).
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { AIRPORTS };
+  module.exports = { AIRPORTS, MAJOR_CITIES, airportTier };
 }

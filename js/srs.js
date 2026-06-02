@@ -29,6 +29,9 @@ const SRS = {
   SECOND_INTERVAL_DAYS: 3,
   // An item is considered "mastered" once its interval reaches this many days.
   MASTERED_INTERVAL_DAYS: 21,
+  // A card she recalls at this interval or longer counts as "under control" and
+  // stops blocking new cards from being introduced (gates new-card intake).
+  STABLE_INTERVAL_DAYS: 7,
 };
 
 // Build the unique id for an airport+direction review item.
@@ -178,23 +181,37 @@ function arrangeStudyOrder(items, rng = Math.random) {
   return fixAdjacency(spreadDirections(items, rng)).map((it) => it.id);
 }
 
+// A card she hasn't gotten under control yet: started, but its interval is still
+// short (she's actively learning or has lapsed). These count against intake.
+function isActiveLearning(item) {
+  return !isNew(item) && item.interval < SRS.STABLE_INTERVAL_DAYS;
+}
+
 /*
  * Build the queue for a study session.
- *   - Items currently due (so she clears her backlog), then new items up to
- *     `newLimit` to grow her deck gradually.
+ *   - Items currently due (so she clears her backlog), then NEW cards.
+ *   - New cards are NOT capped per session. Instead they are gated by how many
+ *     she's still actively learning: new ones are introduced only up to
+ *     `maxActive` cards in flight, so the deck grows in step with her mastery.
+ *   - New airports are introduced in curriculum order via `priority`
+ *     (hubs first, then major cities, then the rest), shuffled within a tier.
  *   - Within each group the two directions of an airport are spread apart and
  *     never adjacent, so answering DEN→Denver doesn't give away Denver→DEN.
  * Returns an array of item ids in the order they should be shown.
  */
-function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12, allowCodes = null, rng = Math.random } = {}) {
+function buildSessionQueue(itemsById, { now = Date.now(), maxActive = 16, allowCodes = null, priority = null, rng = Math.random } = {}) {
   let all = Object.values(itemsById);
   if (allowCodes) all = all.filter((it) => allowCodes.has(it.code)); // study-set filter
 
   const due = all.filter((it) => isDue(it, now));
 
-  // New cards: introduce a RANDOM set of airports each session (not always the
-  // same ones in data order), keeping an airport's directions together for
-  // selection, then capping at `newLimit` cards.
+  // How much room is there for new cards? Open slots = ceiling minus the cards
+  // she's still actively learning. As cards stabilize, room re-opens for more.
+  const activeCount = all.filter(isActiveLearning).length;
+  const room = Math.max(0, maxActive - activeCount);
+
+  // Group new items by airport, order airports by curriculum priority (lower
+  // number first), shuffling within the same priority for variety.
   const newByCode = new Map();
   for (const it of all) {
     if (!isNew(it)) continue;
@@ -202,14 +219,16 @@ function buildSessionQueue(itemsById, { now = Date.now(), newLimit = 12, allowCo
     if (a) a.push(it);
     else newByCode.set(it.code, [it]);
   }
+  const prio = (code) => (priority && priority[code] != null ? priority[code] : 1);
+  const codes = shuffle([...newByCode.keys()], rng).sort((a, b) => prio(a) - prio(b));
+
   const fresh = [];
-  const cap = Math.max(0, newLimit);
-  for (const code of shuffle([...newByCode.keys()], rng)) {
+  for (const code of codes) {
+    if (fresh.length >= room) break;
     for (const it of newByCode.get(code)) {
-      if (fresh.length >= cap) break;
+      if (fresh.length >= room) break;
       fresh.push(it);
     }
-    if (fresh.length >= cap) break;
   }
 
   const ordered = [...spreadDirections(due, rng), ...spreadDirections(fresh, rng)];
@@ -268,6 +287,7 @@ const SRS_API = {
   isMastered,
   statusOf,
   grade,
+  isActiveLearning,
   buildSessionQueue,
   arrangeStudyOrder,
   summarize,
