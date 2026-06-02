@@ -22,24 +22,25 @@ test("a new item is new and not due", () => {
   assert.strictEqual(Srs.isDue(it, now), false);
 });
 
-test("'Got it' builds a streak; the card stays in learning until the 10th correct", () => {
+test("'Got it' builds a streak; the card stays in learning until the target correct", () => {
+  const T = Srs.SRS.LEARN_TARGET;
   let it = Srs.newItem("DEN", "CODE_TO_CITY");
-  for (let i = 1; i <= 9; i++) {
+  for (let i = 1; i < T; i++) {
     it = Srs.grade(it, true, now);
     assert.strictEqual(it.reps, i);
     assert.strictEqual(Srs.isMastered(it), false, `not known yet at ${i} correct`);
     assert.ok(it.due - now <= Srs.SRS.LAPSE_DELAY_MS, "still drilled this session");
   }
-  it = Srs.grade(it, true, now); // 10th in a row -> known
-  assert.strictEqual(it.reps, 10);
-  assert.strictEqual(Srs.isMastered(it), true, "known after 10 in a row");
+  it = Srs.grade(it, true, now); // Tth in a row -> known
+  assert.strictEqual(it.reps, T);
+  assert.strictEqual(Srs.isMastered(it), true, "known after the target in a row");
   assert.strictEqual(it.interval, Srs.SRS.GRAD_INTERVAL_DAYS);
   assert.strictEqual(it.due, now + Srs.SRS.GRAD_INTERVAL_DAYS * DAY, "first check a few days out");
 });
 
 test("known cards space their occasional checks further out each time", () => {
   let it = Srs.newItem("DEN", "CODE_TO_CITY");
-  for (let i = 0; i < 10; i++) it = Srs.grade(it, true, now); // learn it
+  for (let i = 0; i < Srs.SRS.LEARN_TARGET; i++) it = Srs.grade(it, true, now); // learn it
   const first = it.interval; // GRAD_INTERVAL_DAYS
   it = Srs.grade(it, true, now); // a later correct check
   assert.ok(it.interval > first, "next check is spaced further out");
@@ -67,26 +68,28 @@ test("ease never falls below the floor", () => {
   assert.ok(it.ease >= Srs.SRS.MIN_EASE);
 });
 
-test("10 correct in a row marks a card known on the same day", () => {
+test("a full streak in a row marks a card known on the same day", () => {
   let it = Srs.newItem("DEN", "CODE_TO_CITY");
-  for (let i = 0; i < 10; i++) it = Srs.grade(it, true, now); // all at the SAME `now`
+  for (let i = 0; i < Srs.SRS.LEARN_TARGET; i++) it = Srs.grade(it, true, now); // same `now`
   assert.strictEqual(Srs.isMastered(it), true);
   assert.strictEqual(Srs.isActiveLearning(it), false, "no longer counts against intake");
 });
 
-test("after a known card is missed, only 3 correct in a row re-learns it", () => {
+test("after a known card is missed, a quick refresh streak re-learns it", () => {
+  const R = Srs.SRS.RELEARN_TARGET;
   let it = Srs.newItem("DEN", "CODE_TO_CITY");
-  for (let i = 0; i < 10; i++) it = Srs.grade(it, true, now); // known
+  for (let i = 0; i < Srs.SRS.LEARN_TARGET; i++) it = Srs.grade(it, true, now); // known
   assert.strictEqual(it.learnedOnce, true);
 
   it = Srs.grade(it, false, now); // a later slip
   assert.strictEqual(Srs.isMastered(it), false, "back to learning");
 
-  it = Srs.grade(it, true, now); // 1
-  it = Srs.grade(it, true, now); // 2
-  assert.strictEqual(Srs.isMastered(it), false, "still relearning at 2");
-  it = Srs.grade(it, true, now); // 3 -> re-known (quick refresh)
-  assert.strictEqual(Srs.isMastered(it), true, "known again after 3 in a row");
+  for (let i = 1; i < R; i++) {
+    it = Srs.grade(it, true, now);
+    assert.strictEqual(Srs.isMastered(it), false, `still relearning at ${i}`);
+  }
+  it = Srs.grade(it, true, now); // Rth -> re-known (quick refresh)
+  assert.strictEqual(Srs.isMastered(it), true, "known again after the refresh streak");
 });
 
 test("buildItems creates two directions per airport and preserves progress", () => {

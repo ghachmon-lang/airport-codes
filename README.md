@@ -13,7 +13,7 @@ are only re-checked once in a while to confirm they held. The app adapts as you 
   `Destination → Code` (Denver → DEN), tracked separately.
 - **Self-graded flip cards** — read the prompt, think, tap to reveal, then tap
   **Got it** or **Missed it**.
-- **Learn by getting it right** — answer a card correctly **10 times in a row** and it's
+- **Learn by getting it right** — answer a card correctly **4 times in a row** and it's
   learned (achievable the same day); after that it's only checked occasionally. A miss
   breaks the streak. Slip on one you already knew? Just **3 in a row** to refresh it.
 - **Curriculum-paced** — teaches hubs first, then major cities, then everything else,

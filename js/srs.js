@@ -17,7 +17,7 @@ const DIRECTIONS = ["CODE_TO_CITY", "CITY_TO_CODE"];
 const SRS = {
   DAY_MS: 24 * 60 * 60 * 1000,
   // Consecutive correct answers needed to "know" a brand-new card (same-day OK).
-  LEARN_TARGET: 10,
+  LEARN_TARGET: 4,
   // Consecutive correct needed to re-learn a card she once knew but later missed.
   RELEARN_TARGET: 3,
   // When still learning (or just missed) a card reappears after this short delay,

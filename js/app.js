@@ -92,12 +92,12 @@
     "Unstoppable, Corrine! 😘 Smart, lovely, and getting better every minute.",
     "Amazing, Corrine! 💝 Beauty, brains, and a memory like a steel trap.",
   ];
-  // Reward shown the moment she fully learns a destination (10 in a row).
+  // Reward shown the moment she fully learns a destination (full streak in a row).
   const MAPLE_CHEERS = [
-    "10 for 10, Corrine! 🐕 You've won a kiss from Maple 💋",
-    "Learned it, Corrine! 🐶 Go collect your kiss from Maple 💕",
+    "Learned it, Corrine! 🐕 You've won a kiss from Maple 💋",
+    "Nailed it, Corrine! 🐶 Go collect your kiss from Maple 💕",
     "Mastered, Corrine! 🌟 Maple owes you a big sloppy kiss 🐕💋",
-    "Perfect 10, Corrine! 🐾 Maple is wagging — that's a kiss for you 💋",
+    "That's a learn, Corrine! 🐾 Maple is wagging — a kiss for you 💋",
   ];
   let cheerTimer = null;
   const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
