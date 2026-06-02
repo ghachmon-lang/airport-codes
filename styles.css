@@ -265,6 +265,42 @@ button { font-family: inherit; }
 }
 .settings-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 
+/* Encouragement toast for Corrine */
+.cheer-toast {
+  position: fixed;
+  left: 50%;
+  top: calc(64px + env(safe-area-inset-top, 0));
+  transform: translate(-50%, -16px);
+  z-index: 50;
+  max-width: min(92vw, 460px);
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--gold));
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 30px rgba(10, 49, 97, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.cheer-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  animation: cheer-pop 0.42s ease;
+}
+@keyframes cheer-pop {
+  0% { transform: translate(-50%, -16px) scale(0.9); }
+  60% { transform: translate(-50%, 0) scale(1.04); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cheer-toast, .cheer-toast.show { transition: opacity 0.2s ease; animation: none; }
+}
+
 /* Desktop: keys are only relevant with a keyboard */
 @media (hover: none) {
   .key { display: none; }

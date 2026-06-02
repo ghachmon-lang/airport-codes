@@ -76,6 +76,33 @@
     show("home");
   }
 
+  // --- Encouragement for Corrine ----------------------------------------
+  // Shown after a hot streak of consecutive correct answers (every 5–10).
+  const CHEERS = [
+    "Brilliant, Corrine! 🎉 Beauty and brains — you've got both.",
+    "Look at you go, Corrine! 💕 Smartest (and prettiest) one in the sky.",
+    "Nailing it, Corrine! ✨ That gorgeous brain of yours never misses.",
+    "Yes, Corrine! 😍 Smart, stunning, and absolutely on fire.",
+    "That's my girl, Corrine! 💖 So clever it's almost unfair.",
+    "Wow, Corrine! 💫 Gorgeous and a genius — how'd I get so lucky?",
+    "Crushing it, Corrine! 🌟 Pretty and brilliant in equal measure.",
+    "Incredible, Corrine! 🛫 These codes don't stand a chance against you.",
+    "Keep soaring, Corrine! 💕 Clever mind, beautiful heart.",
+    "Perfect, Corrine! ✨ Your brilliance shines as bright as your smile.",
+    "Unstoppable, Corrine! 😘 Smart, lovely, and getting better every minute.",
+    "Amazing, Corrine! 💝 Beauty, brains, and a memory like a steel trap.",
+  ];
+  let cheerTimer = null;
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  function showCheer() {
+    const el = $("cheer-toast");
+    if (!el) return;
+    el.textContent = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+    el.classList.add("show");
+    clearTimeout(cheerTimer);
+    cheerTimer = setTimeout(() => el.classList.remove("show"), 3800);
+  }
+
   // --- Session flow ------------------------------------------------------
   function startSession() {
     const allow = allowedCodes();
@@ -100,7 +127,7 @@
   }
 
   function newSession(queue) {
-    return { queue, index: 0, reviewed: 0, got: 0, missed: 0, flipped: false };
+    return { queue, index: 0, reviewed: 0, got: 0, missed: 0, flipped: false, correctRun: 0, nextCheer: randInt(5, 10) };
   }
 
   function currentItem() {
@@ -162,6 +189,18 @@
 
     session.reviewed++;
     correct ? session.got++ : session.missed++;
+
+    // Hot-streak encouragement for Corrine, every 5–10 correct in a row.
+    if (correct) {
+      session.correctRun++;
+      if (session.correctRun >= session.nextCheer) {
+        showCheer();
+        session.correctRun = 0;
+        session.nextCheer = randInt(5, 10);
+      }
+    } else {
+      session.correctRun = 0;
+    }
 
     // Reviewing a card counts today toward her daily streak (idempotent per day).
     state.streak = Srs.bumpStreak(state.streak, Date.now());
