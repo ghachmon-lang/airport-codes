@@ -15,7 +15,7 @@ are only re-checked once in a while to confirm they held. The app adapts as you 
   **Got it** or **Missed it**.
 - **Learn by getting it right** — answer a card correctly **4 times in a row** and it's
   learned (achievable the same day); after that it's only checked occasionally. A miss
-  breaks the streak. Slip on one you already knew? Just **3 in a row** to refresh it.
+  breaks the streak. Slip on one you already knew? Just **2 in a row** to refresh it.
 - **Curriculum-paced** — teaches hubs first, then major cities, then everything else,
   adding new destinations only as you learn the current ones (no fixed per-session count).
   Tune how many you juggle at once in Settings → "Cards to learn at once".

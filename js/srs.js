@@ -19,7 +19,7 @@ const SRS = {
   // Consecutive correct answers needed to "know" a brand-new card (same-day OK).
   LEARN_TARGET: 4,
   // Consecutive correct needed to re-learn a card she once knew but later missed.
-  RELEARN_TARGET: 3,
+  RELEARN_TARGET: 2,
   // When still learning (or just missed) a card reappears after this short delay,
   // so it's drilled again within the same session.
   LAPSE_DELAY_MS: 60 * 1000, // 1 minute
