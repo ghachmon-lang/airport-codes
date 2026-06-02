@@ -16,22 +16,23 @@ const DIRECTIONS = ["CODE_TO_CITY", "CITY_TO_CODE"];
 // Tunable scheduler constants.
 const SRS = {
   DAY_MS: 24 * 60 * 60 * 1000,
-  // When a card is missed it reappears after this short delay (drilled this session).
+  // Consecutive correct answers needed to "know" a brand-new card (same-day OK).
+  LEARN_TARGET: 10,
+  // Consecutive correct needed to re-learn a card she once knew but later missed.
+  RELEARN_TARGET: 3,
+  // When still learning (or just missed) a card reappears after this short delay,
+  // so it's drilled again within the same session.
   LAPSE_DELAY_MS: 60 * 1000, // 1 minute
-  // Ease (interval multiplier) bounds.
+  // Once known, the first occasional check is this many days out, then it grows.
+  GRAD_INTERVAL_DAYS: 4,
+  // Cap on how far apart occasional checks can space.
+  MAX_INTERVAL_DAYS: 180,
+  // Ease (interval multiplier) bounds for spacing occasional checks.
   MIN_EASE: 1.3,
   MAX_EASE: 2.8,
   START_EASE: 2.3,
   EASE_DROP_ON_MISS: 0.2, // ease falls each time a card is missed
   EASE_GAIN_ON_HIT: 0.05, // ease creeps up on smooth recall
-  // First two successful intervals (in days) before ease-based growth takes over.
-  FIRST_INTERVAL_DAYS: 1,
-  SECOND_INTERVAL_DAYS: 3,
-  // An item is considered "mastered" once its interval reaches this many days.
-  MASTERED_INTERVAL_DAYS: 21,
-  // A card she recalls at this interval or longer counts as "under control" and
-  // stops blocking new cards from being introduced (gates new-card intake).
-  STABLE_INTERVAL_DAYS: 7,
 };
 
 // Build the unique id for an airport+direction review item.
@@ -48,7 +49,8 @@ function newItem(code, dir) {
     interval: 0, // in days; 0 = brand new / not yet scheduled
     ease: SRS.START_EASE,
     due: null, // ms timestamp when it's next due; null = new
-    reps: 0, // total successful reviews in a row
+    reps: 0, // current streak of consecutive correct answers (resets on a miss)
+    learnedOnce: false, // has it ever reached the learn target? (relaxes future target)
     lapses: 0, // total times missed
     lastSeen: null,
   };
@@ -85,8 +87,22 @@ function isDue(item, now) {
   return item.due !== null && item.due <= now;
 }
 
+// Consecutive-correct streak needed for this card to count as "known".
+// Drops from 10 to 3 once she's learned it at least once (a later slip only needs
+// a quick refresh).
+function learnTarget(item) {
+  return item.learnedOnce ? SRS.RELEARN_TARGET : SRS.LEARN_TARGET;
+}
+
+// "Known": her current correct streak has reached the target for this card.
 function isMastered(item) {
-  return item.interval >= SRS.MASTERED_INTERVAL_DAYS;
+  return item.reps >= learnTarget(item);
+}
+
+// Still being learned (started but streak not yet at target) — counts against the
+// new-card ceiling so intake waits until she gets current cards known.
+function isActiveLearning(item) {
+  return !isNew(item) && item.reps < learnTarget(item);
 }
 
 // Bucket an item for stats display.
@@ -111,7 +127,7 @@ function grade(item, correct, now = Date.now()) {
   const next = { ...item, lastSeen: now };
 
   if (!correct) {
-    // Missed: reset progress, drop ease, reappear within the session.
+    // Missed: break the streak, drop ease, reappear within the session.
     next.reps = 0;
     next.lapses = item.lapses + 1;
     next.ease = clampEase(item.ease - SRS.EASE_DROP_ON_MISS);
@@ -120,17 +136,26 @@ function grade(item, correct, now = Date.now()) {
     return next;
   }
 
-  // Correct: advance through the schedule.
+  const wasKnown = isMastered(item); // known before this answer?
   next.reps = item.reps + 1;
-  if (next.reps === 1) {
-    next.interval = SRS.FIRST_INTERVAL_DAYS;
-  } else if (next.reps === 2) {
-    next.interval = SRS.SECOND_INTERVAL_DAYS;
+  if (next.reps >= SRS.LEARN_TARGET) next.learnedOnce = true; // first full learn
+  const target = learnTarget(next);
+
+  if (next.reps < target) {
+    // Still learning: keep drilling it this session until the streak reaches target.
+    next.interval = 0;
+    next.due = now + SRS.LAPSE_DELAY_MS;
+  } else if (!wasKnown) {
+    // Just reached "known": start occasional checks a few days out.
+    next.interval = SRS.GRAD_INTERVAL_DAYS;
+    next.due = now + next.interval * SRS.DAY_MS;
   } else {
+    // Already known, passing an occasional check: space the next one further out.
     next.ease = clampEase(item.ease + SRS.EASE_GAIN_ON_HIT);
-    next.interval = Math.round(item.interval * next.ease);
+    const grown = Math.round(Math.max(item.interval, SRS.GRAD_INTERVAL_DAYS) * next.ease);
+    next.interval = Math.min(SRS.MAX_INTERVAL_DAYS, grown);
+    next.due = now + next.interval * SRS.DAY_MS;
   }
-  next.due = now + next.interval * SRS.DAY_MS;
   return next;
 }
 
@@ -179,12 +204,6 @@ function fixAdjacency(items) {
 // Shuffle a set of items into a study order with directions separated; returns ids.
 function arrangeStudyOrder(items, rng = Math.random) {
   return fixAdjacency(spreadDirections(items, rng)).map((it) => it.id);
-}
-
-// A card she hasn't gotten under control yet: started, but its interval is still
-// short (she's actively learning or has lapsed). These count against intake.
-function isActiveLearning(item) {
-  return !isNew(item) && item.interval < SRS.STABLE_INTERVAL_DAYS;
 }
 
 /*

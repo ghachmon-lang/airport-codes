@@ -156,9 +156,13 @@
     // Reviewing a card counts today toward her daily streak (idempotent per day).
     state.streak = Srs.bumpStreak(state.streak, Date.now());
 
-    // A missed card gets requeued later in THIS session so she drills it now.
-    if (!correct) {
-      const insertAt = Math.min(session.index + 4, session.queue.length);
+    // Keep drilling a card within THIS session until its streak reaches "known":
+    // correct-but-not-yet-known cards come back spaced out (others interleave) so
+    // she can build the 10-in-a-row; missed cards come back sooner. A card that
+    // just became known is not requeued — it graduates to occasional checks.
+    if (Srs.isActiveLearning(updated)) {
+      const offset = correct ? 9 : 4;
+      const insertAt = Math.min(session.index + offset, session.queue.length);
       session.queue.splice(insertAt, 0, updated.id);
     }
 
