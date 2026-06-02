@@ -92,15 +92,24 @@
     "Unstoppable, Corrine! 😘 Smart, lovely, and getting better every minute.",
     "Amazing, Corrine! 💝 Beauty, brains, and a memory like a steel trap.",
   ];
+  // Reward shown the moment she fully learns a destination (10 in a row).
+  const MAPLE_CHEERS = [
+    "10 for 10, Corrine! 🐕 You've won a kiss from Maple 💋",
+    "Learned it, Corrine! 🐶 Go collect your kiss from Maple 💕",
+    "Mastered, Corrine! 🌟 Maple owes you a big sloppy kiss 🐕💋",
+    "Perfect 10, Corrine! 🐾 Maple is wagging — that's a kiss for you 💋",
+  ];
   let cheerTimer = null;
   const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-  function showCheer() {
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  function showCheer(message, special) {
     const el = $("cheer-toast");
     if (!el) return;
-    el.textContent = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+    el.textContent = message || pick(CHEERS);
+    el.classList.toggle("maple", !!special);
     el.classList.add("show");
     clearTimeout(cheerTimer);
-    cheerTimer = setTimeout(() => el.classList.remove("show"), 3800);
+    cheerTimer = setTimeout(() => el.classList.remove("show"), special ? 4600 : 3800);
   }
 
   // --- Session flow ------------------------------------------------------
@@ -190,16 +199,20 @@
     session.reviewed++;
     correct ? session.got++ : session.missed++;
 
-    // Hot-streak encouragement for Corrine, every 5–10 correct in a row.
-    if (correct) {
-      session.correctRun++;
-      if (session.correctRun >= session.nextCheer) {
-        showCheer();
-        session.correctRun = 0;
-        session.nextCheer = randInt(5, 10);
-      }
-    } else {
+    // Encouragement for Corrine. A first-time "10/10" mastery wins a kiss from
+    // Maple and takes priority; otherwise a hot streak (every 5–10 correct) cheers.
+    const justLearned = correct && !item.learnedOnce && updated.learnedOnce;
+    if (correct) session.correctRun++;
+    else session.correctRun = 0;
+
+    if (justLearned) {
+      showCheer(pick(MAPLE_CHEERS), true);
       session.correctRun = 0;
+      session.nextCheer = randInt(5, 10);
+    } else if (correct && session.correctRun >= session.nextCheer) {
+      showCheer();
+      session.correctRun = 0;
+      session.nextCheer = randInt(5, 10);
     }
 
     // Reviewing a card counts today toward her daily streak (idempotent per day).

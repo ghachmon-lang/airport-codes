@@ -292,6 +292,10 @@ button { font-family: inherit; }
   transform: translate(-50%, 0);
   animation: cheer-pop 0.42s ease;
 }
+.cheer-toast.maple {
+  background: linear-gradient(135deg, #d6336c, var(--gold));
+  font-size: 1.05rem;
+}
 @keyframes cheer-pop {
   0% { transform: translate(-50%, -16px) scale(0.9); }
   60% { transform: translate(-50%, 0) scale(1.04); }
