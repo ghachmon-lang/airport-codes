@@ -64,6 +64,7 @@
 
   let flight = null; // active flight (lesson) state
   let connTimer = null, bonusTimer = null;
+  let pendingContinue = false; // tight-connection countdown deferred until cheers close
   const cheerQueue = [];
 
   // ---------- tiny helpers ---------------------------------------------------
@@ -142,13 +143,20 @@
     return null;
   }
 
-  function dueReviewCodes() {
+  /*
+   * Items for the Standby list: cards she has LEARNED that are now due for an
+   * occasional check (or slipped and need a refresh). Cards still mid-learning
+   * inside a unit are excluded — they re-drill in their own unit's flights, and
+   * counting them here would make standby nag one minute after every lesson.
+   */
+  function dueReviewItems() {
     const now = Date.now();
-    const codes = new Set();
-    for (const it of Object.values(state.items)) {
-      if (!Srs.isNew(it) && Srs.isDue(it, now)) codes.add(it.code);
-    }
-    return [...codes];
+    return Object.values(state.items)
+      .filter((it) => it.learnedOnce && !Srs.isNew(it) && Srs.isDue(it, now))
+      .sort((a, b) => a.due - b.due);
+  }
+  function dueReviewCodes() {
+    return [...new Set(dueReviewItems().map((it) => it.code))];
   }
 
   function masteredCodes() {
@@ -185,13 +193,20 @@
     $("risk-banner").hidden = !atRisk;
     if (atRisk) $("risk-text").textContent = `Don't lose your ${state.streak.count}-day streak, Corrine — land one flight today! 🔥`;
     if ("setAppBadge" in navigator) {
-      const due = dueReviewCodes().length;
-      (due > 0 ? navigator.setAppBadge(due) : navigator.clearAppBadge && navigator.clearAppBadge()).catch?.(() => {});
+      try {
+        const due = dueReviewCodes().length;
+        Promise.resolve(due > 0 ? navigator.setAppBadge(due) : navigator.clearAppBadge && navigator.clearAppBadge()).catch(() => {});
+      } catch (e) {
+        /* badge is decorative — never let it break the topbar */
+      }
     }
   }
 
   function nodeButton(node, cls, inner, label) {
-    return `<div class="path-row"><button class="node ${cls}" data-node="${node.id}" aria-label="${label}">
+    // locked nodes get a real disabled attribute — CSS pointer-events alone
+    // doesn't stop keyboard/assistive-tech activation
+    const dis = cls.includes("locked") ? " disabled" : "";
+    return `<div class="path-row"><button class="node ${cls}" data-node="${node.id}" aria-label="${label}"${dis}>
       <span class="node-label">${label}</span>${inner}</button></div>`;
   }
 
@@ -201,7 +216,7 @@
     let html = "";
 
     const due = dueReviewCodes();
-    if (due.length >= 4) {
+    if (due.length >= 1) { // even a single due card gets a way home — no stranding
       html += `<div class="path" style="padding-top:34px">
         <div class="path-row"><button class="node review current" data-node="standby" aria-label="Standby flight">
           <span class="start-pill" style="color:var(--sky)">STANDBY · ${due.length} WAITING</span>🧳</button></div>
@@ -239,8 +254,9 @@
       html += "</div>";
       if (!unlocked) break; // don't render the whole locked world — keeps focus
     }
-    const remaining = UNITS.filter((_, i) => !unitUnlocked(i)).length;
-    if (remaining > 1) html += `<p class="muted" style="text-align:center">…${remaining} more routes to unlock ✈️</p>`;
+    // the first locked unit is already rendered above, so don't count it twice
+    const remaining = UNITS.filter((_, i) => !unitUnlocked(i)).length - 1;
+    if (remaining > 0) html += `<p class="muted" style="text-align:center">…${remaining} more routes to unlock ✈️</p>`;
     cont.innerHTML = html;
 
     cont.querySelectorAll(".node").forEach((btn) => {
@@ -271,9 +287,20 @@
   }
 
   function startStandby() {
-    const codes = Game.shuffleArr(dueReviewCodes()).slice(0, 7);
-    const pool = codes.map((c) => byCode[c]);
-    const questions = Game.buildLesson(pool, AIRPORTS, { length: 10, familiar: () => true });
+    // Target the exact due items, in their due DIRECTION, so finishing the
+    // standby flight actually clears the standby list.
+    const items = dueReviewItems().slice(0, 12);
+    if (!items.length) return;
+    const poolOf = (code) => {
+      const unit = UNITS.find((u) => u.codes.includes(code));
+      return (unit ? unit.codes : [code]).map((c) => byCode[c]);
+    };
+    let questions = items.map((it) => {
+      const a = byCode[it.code];
+      if (it.dir === "CODE_TO_CITY") return Game.qMcCity(a, poolOf(it.code), AIRPORTS);
+      return Math.random() < 0.5 ? Game.qTypeCode(a, poolOf(it.code), AIRPORTS) : Game.qMcCode(a, poolOf(it.code), AIRPORTS);
+    });
+    questions = Game.shuffleArr(questions);
     beginFlight({ nodeId: "standby", unit: null, node: null, questions, review: true, bonus: false });
   }
 
@@ -316,15 +343,22 @@
   }
 
   function renderQuestion() {
+    if (!flight) return; // quit raced a pending timer
     const q = currentQ();
     if (!q) return land();
+    flight.locked = false; // new question, grading unlocked
     const area = $("q-area");
     if (flight.showFA) {
       // entering Final Approach — the banner survives this question render
       setMaple(null, `🛬 Final approach — let's fix ${flight.retries.length}!`);
       flight.showFA = false;
+    } else if (flight.stickyBubble) {
+      // a kiss/hook earned on the last answer stays visible through this question
+      setMaple("happy", flight.stickyBubble);
+      flight.stickyBubble = null;
     } else {
-      setMaple(null, q.intro ? hookFor(q.code) : null);
+      // NOTE: hooks are never shown during a live question — they'd leak the answer
+      setMaple(null, null);
     }
     let html = `<div class="q-sub">${q.sub}</div>`;
     if (q.type === "pairs") {
@@ -340,7 +374,7 @@
       html += `<div class="q-prompt ${isCode ? "" : "city"}">${escapeHtml(q.prompt)}</div>`;
       if (q.type === "type-code") {
         html += `<div class="type-row" id="slots">
-          <div class="type-box" data-slot="0"></div><div class="type-box" data-slot="1"></div><div class="type-box" data-slot="2"></div>
+          <button type="button" class="type-box" data-slot="0" aria-label="letter slot 1"></button><button type="button" class="type-box" data-slot="1" aria-label="letter slot 2"></button><button type="button" class="type-box" data-slot="2" aria-label="letter slot 3"></button>
         </div>
         <div class="options grid2" id="tiles" style="grid-template-columns:repeat(4,1fr)">` +
           q.letters.map((ch, i) => `<button class="opt code" data-tile="${i}" data-ch="${ch}">${ch}</button>`).join("") +
@@ -366,7 +400,7 @@
     if (q.type === "pairs") {
       area.querySelectorAll(".opt").forEach((b) =>
         b.addEventListener("click", () => {
-          if (b.classList.contains("matched")) return;
+          if (flight.locked || b.classList.contains("matched")) return;
           Sfx.tick();
           const side = b.dataset.side;
           area.querySelectorAll(`.opt[data-side="${side}"]`).forEach((x) => x.classList.remove("selected"));
@@ -384,12 +418,12 @@
         slots.forEach((s, i) => (s.textContent = placed[i] ? placed[i].dataset.ch : ""));
         if (placed.every(Boolean)) {
           const typed = placed.map((t) => t.dataset.ch).join("");
-          setTimeout(() => answer(q, Game.checkTyped(typed, q.answer), typed), 120);
+          flight.timer = setTimeout(() => answer(q, Game.checkTyped(typed, q.answer), typed), 120);
         }
       };
       tiles.forEach((t) =>
         t.addEventListener("click", () => {
-          if (t.classList.contains("dim")) return;
+          if (flight.locked || t.classList.contains("dim")) return;
           const i = placed.findIndex((x) => !x);
           if (i === -1) return;
           Sfx.tick();
@@ -400,7 +434,7 @@
       );
       slots.forEach((s, i) =>
         s.addEventListener("click", () => {
-          if (!placed[i]) return;
+          if (flight.locked || !placed[i]) return;
           Sfx.tick();
           placed[i].classList.remove("dim");
           placed[i] = null;
@@ -460,8 +494,10 @@
     if (correct) state.correctTotal++;
     if (correct && !item.learnedOnce && updated.learnedOnce) {
       state.kisses++;
-      flight.learnedCodes.push(code);
-      setMaple("happy", pick(MAPLE_LEARNED).replace("CODE", code));
+      if (!flight.learnedCodes.includes(code)) flight.learnedCodes.push(code); // both directions -> one mention
+      const msg = pick(MAPLE_LEARNED).replace("CODE", code);
+      flight.stickyBubble = msg; // survives into the next question instead of flashing
+      setMaple("happy", msg);
       Sfx.match();
     }
   }
@@ -471,6 +507,10 @@
   }
 
   function answer(q, correct, given, optBtn, extra = {}) {
+    if (!flight || flight.locked) return; // re-entry guard: one grade per question
+    flight.locked = true;
+    rolloverDay(); // miles land on the correct calendar day, even past midnight
+
     // lock options
     $("q-area").querySelectorAll(".opt").forEach((b) => b.classList.add("dim"));
     if (optBtn) optBtn.classList.remove("dim");
@@ -488,14 +528,16 @@
       state.day.miles += 10;
       flight.passed++;
       setMaple("sad", pick(MAPLE_MISS));
-      setTimeout(advance, 650);
+      flight.timer = setTimeout(advance, 650);
       return;
     }
 
     if (correct) {
       flight.combo++;
       flight.maxCombo = Math.max(flight.maxCombo, flight.combo);
-      const bonus = flight.combo >= 3 ? 2 : 0;
+      // combo bonus GROWS with the streak (x3 -> +1 ... capped +10) so the
+      // flame's escalation is backed by real miles
+      const bonus = flight.combo >= 3 ? Math.min(10, flight.combo - 2) : 0;
       const gained = flight.bonus ? 5 : q.miles + bonus;
       flight.miles += gained;
       state.miles += gained;
@@ -509,33 +551,54 @@
       flame.classList.remove("hot");
       void flame.offsetWidth;
       flame.classList.add("hot");
-      if (flight.combo === 3 || flight.combo === 6 || flight.combo === 9) setMaple("happy", pick(MAPLE_COMBO));
-      else if (!flight.learnedCodes.includes(q.code)) setMaple("happy", null);
+      if (q.intro && hookFor(q.code)) {
+        // right after an intro guess is the moment the hook actually teaches
+        flight.stickyBubble = `💡 ${hookFor(q.code)}`;
+        setMaple("happy", flight.stickyBubble);
+      } else if (flight.stickyBubble) {
+        // a kiss message was just set by gradeSrs — don't clobber it
+      } else if (flight.combo === 3 || flight.combo === 6 || flight.combo === 9) {
+        setMaple("happy", pick(MAPLE_COMBO));
+      } else {
+        setMaple("happy", null);
+      }
       flight.passed++;
       if (flight.bonus) {
         flight.bonusScore = (flight.bonusScore || 0) + 1;
-        setTimeout(nextBonusQ, 350);
+        flight.timer = setTimeout(nextBonusQ, 350);
       } else {
-        setTimeout(advance, 650);
+        flight.timer = setTimeout(advance, 650);
       }
     } else {
       flight.combo = 0;
       flight.wrong++;
       $("combo-flame").textContent = "";
       if (optBtn) optBtn.classList.add("wrong");
-      // reveal the right option
+      // reveal the right option at full strength — this is the learning moment
       $("q-area").querySelectorAll("[data-opt]").forEach((b) => {
-        if (b.dataset.opt === q.answer) b.classList.add("correct");
+        if (b.dataset.opt === q.answer) {
+          b.classList.add("correct");
+          b.classList.remove("dim");
+        }
       });
+      if (q.type === "type-code") {
+        // rewrite the slots with the correct code, highlighted
+        $("q-area").querySelectorAll(".type-box").forEach((s, i) => {
+          s.textContent = q.answer[i] || "";
+          s.classList.add("correct");
+        });
+      }
       Sfx.wrong();
       if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
       setMaple("sad", pick(MAPLE_MISS));
       if (flight.bonus) {
-        setTimeout(nextBonusQ, 550);
+        flight.timer = setTimeout(nextBonusQ, 550);
         return;
       }
       if (!flight.inFinalApproach && (q.retried || 0) < 1 && q.type !== "pairs") {
         flight.retries.push({ ...q, retried: 1 });
+        flight.passed++; // the missed slot is consumed…
+        flight.planned++; // …and its retry becomes a new slot NOW, so the bar never shrinks
       } else {
         flight.passed++; // retried and still missed — slot passes so she always lands
       }
@@ -547,24 +610,34 @@
     const fb = $("feedback");
     fb.classList.remove("good");
     fb.classList.add("bad", "show");
+    // make room so the footer can't hide the revealed correct answer…
+    $("lesson-screen").classList.add("fb-open");
+    // …and bring that answer into view (the learning moment must be visible)
+    const revealed = $("q-area").querySelector(".opt.correct, .type-box.correct");
+    if (revealed && revealed.scrollIntoView) revealed.scrollIntoView({ block: "center", behavior: "smooth" });
     $("fb-headline").textContent = "Not quite…";
     const ans = q.type === "pairs" ? "" : `${q.type === "mc-city" ? q.prompt + " → " + q.answer : q.answer + " = " + q.prompt}`;
     $("fb-detail").textContent = ans;
     const hook = hookFor(q.code);
-    $("fb-hint").textContent = hook ? `💡 ${hook}` : "";
+    const city = (byCode[q.code] || {}).city || "";
+    $("fb-hint").textContent = hook
+      ? `💡 ${hook}`
+      : `📝 Say it three times: ${q.code} = ${city}`; // every miss teaches something
   }
 
   function hideFeedback() {
     $("feedback").classList.remove("show");
+    $("lesson-screen").classList.remove("fb-open");
   }
 
   function advance() {
+    if (!flight) return; // flight was quit while a timer was pending
     hideFeedback();
     flight.qi++;
     const mainDone = flight.qi >= flight.questions.length;
     if (mainDone && !flight.inFinalApproach && flight.retries.length > 0) {
       flight.inFinalApproach = true;
-      flight.planned = flight.questions.length + flight.retries.length;
+      // planned already grew when each retry was queued — only announce the phase
       flight.showFA = true; // banner is applied by the next renderQuestion
     }
     renderQuestion();
@@ -663,8 +736,6 @@
     Sfx.fanfare();
     confetti(flawless ? 80 : 40);
 
-    // tight connection: next flight quickly = bonus miles
-    setupContinue();
     // Final Boarding offer
     $("bonus-btn").hidden = flight.bonus || masteredCodes().length < 10;
 
@@ -672,7 +743,21 @@
     if (state.day.miles >= state.settings.dailyGoal && state.day.miles - flight.miles < state.settings.dailyGoal) {
       cheerQueue.push({ dog: "🏅", msg: `Daily goal hit! ${pick(CHEERS)}` });
     }
-    drainCheers();
+
+    // Tight connection: the countdown must NOT burn while she reads her
+    // celebration modals — start it only once the cheer queue is empty.
+    if (cheerQueue.length) {
+      pendingContinue = true;
+      const cont = $("continue-btn");
+      cont.textContent = "Continue";
+      cont.onclick = () => {
+        renderPath();
+        show("path-screen");
+      };
+      drainCheers();
+    } else {
+      setupContinue();
+    }
   }
 
   function setupContinue() {
@@ -795,7 +880,12 @@
   on("cheer-btn", "click", () => {
     $("cheer-overlay").classList.remove("show");
     Sfx.tick();
-    setTimeout(drainCheers, 250);
+    if (cheerQueue.length) {
+      setTimeout(drainCheers, 250);
+    } else if (pendingContinue && !$("complete-screen").hidden) {
+      pendingContinue = false;
+      setupContinue(); // now she's watching — start the tight-connection clock
+    }
   });
 
   // ---------- passport -----------------------------------------------------------
@@ -903,12 +993,15 @@
   on("quit-btn", "click", () => {
     if (!confirm("Leave this flight? Your answers so far are saved.")) return;
     clearInterval(bonusTimer);
+    if (flight && flight.timer) clearTimeout(flight.timer); // no ghost advance() later
+    flight = null;
     hideFeedback();
     Store.saveState(state);
     renderPath();
     show("path-screen");
   });
   on("fb-continue", "click", () => {
+    if (!$("feedback").classList.contains("show")) return; // double-tap = no-op
     Sfx.tick();
     advance();
   });

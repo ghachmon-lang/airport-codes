@@ -80,7 +80,7 @@ const Game = (() => {
       sub: intro ? "✨ New destination! Take a guess…" : "Which destination is this?",
       options,
       answer: target.city,
-      miles: 10,
+      miles: intro ? 5 : 10, // 2-choice guesses pay less than real recall
     };
   }
 
@@ -95,7 +95,7 @@ const Game = (() => {
       sub: intro ? "✨ New destination! Take a guess…" : "What's the airport code?",
       options,
       answer: target.code,
-      miles: 10,
+      miles: intro ? 5 : 10, // 2-choice guesses pay less than real recall
     };
   }
 
@@ -160,9 +160,10 @@ const Game = (() => {
         const r = rng();
         q = r < 0.34 ? qTypeCode(a, airports, all, rng) : r < 0.67 ? qMcCode(a, airports, all, rng) : qMcCity(a, airports, all, rng);
       }
-      // avoid the same airport twice in a row
+      // avoid the same airport twice in a row (impossible with a 1-airport pool —
+      // skipping there would loop forever)
       const prev = qs[qs.length - 1];
-      if (prev && (prev.code === a.code || (prev.codes || []).includes(a.code))) continue;
+      if (pool.length > 1 && prev && (prev.code === a.code || (prev.codes || []).includes(a.code))) continue;
       qs.push(q);
     }
 

@@ -18,7 +18,7 @@
   --bg: #f2f5fb;
   --card: #ffffff;
   --ink: #1a2230;
-  --muted: #6b7688;
+  --muted: #5b6678; /* darkened for AA contrast on the page bg */
   --line: #e2e7f0;
   --locked: #cfd6e2;
   --radius: 18px;
@@ -130,7 +130,7 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 4px 0 var(--blue-dark);
 }
 .unit-header.done { background: var(--gold); box-shadow: 0 4px 0 var(--gold-dark); color: #5b3f00; }
-.unit-header .kicker { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.85; }
+.unit-header .kicker { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 1.4px; }
 .unit-header .name { font-size: 1.15rem; font-weight: 800; }
 
 .path { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0 2px; }
@@ -162,10 +162,11 @@ button { font-family: inherit; cursor: pointer; }
 .node.review { background: var(--sky); box-shadow: 0 6px 0 #2f6cb0; }
 .node .stars {
   position: absolute;
-  bottom: -14px;
+  bottom: -16px;
   font-size: 0.72rem;
   letter-spacing: 1px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  color: var(--gold-dark); /* stars sit on the page bg, not the node — must be dark */
+  text-shadow: none;
 }
 .node .node-label {
   position: absolute;
@@ -186,9 +187,9 @@ button { font-family: inherit; cursor: pointer; }
   left: 50%;
   transform: translateX(-50%);
   background: #fff;
-  color: var(--green);
+  color: #2e6b01; /* AA-contrast green on white */
   font-weight: 800;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   letter-spacing: 1px;
   border: 2px solid var(--line);
   border-radius: 10px;
@@ -229,7 +230,7 @@ button { font-family: inherit; cursor: pointer; }
   gap: 12px;
   padding-top: calc(12px + env(safe-area-inset-top, 0));
 }
-.quit-btn { background: none; border: none; font-size: 1.4rem; color: var(--muted); padding: 4px 8px; }
+.quit-btn { background: none; border: none; font-size: 1.4rem; color: var(--muted); padding: 10px 14px; min-width: 44px; min-height: 44px; }
 .lesson-bar { flex: 1; background: var(--line); border-radius: 999px; height: 14px; overflow: hidden; }
 .lesson-bar .fill {
   height: 100%;
@@ -563,3 +564,22 @@ h2.section { margin: 10px 0 0; font-size: 1.05rem; color: var(--navy); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+
+/* correct-answer reveal inside the type-code slots */
+.type-box.correct {
+  border-color: var(--green);
+  background: var(--green-bg);
+  color: var(--green-dark);
+}
+
+/* room for the feedback footer so the revealed answer stays visible */
+#lesson-screen.fb-open { padding-bottom: 260px; }
+
+/* keyboard focus is visible everywhere */
+.opt:focus-visible, .btn:focus-visible, .node:focus-visible, .tab:focus-visible,
+.type-box:focus-visible, .stat-chip:focus-visible, .quit-btn:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+.switch:focus-within .knob { outline: 3px solid var(--sky); outline-offset: 2px; }
