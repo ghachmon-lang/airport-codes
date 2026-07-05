@@ -220,8 +220,94 @@ function airportTier(a) {
   return 3;
 }
 
+/*
+ * LEARNING UNITS — the journey path. Each unit is a themed "route" of airports
+ * that unlocks in order. Sizes 4–8. Every airport in AIRPORTS appears in
+ * exactly one unit (validated by tests).
+ */
+const UNITS = [
+  { id: "hubs",       emoji: "⭐", title: "The Hubs",             codes: ["ORD","DEN","IAH","EWR","SFO","LAX","IAD","GUM"] },
+  { id: "big-east",   emoji: "🗽", title: "Big East",             codes: ["JFK","LGA","BOS","PHL","DCA","BWI"] },
+  { id: "west-stars", emoji: "🌉", title: "West Coast Stars",     codes: ["SEA","PDX","SAN","LAS","PHX","SLC"] },
+  { id: "florida",    emoji: "🌴", title: "Sunshine State",       codes: ["MIA","FLL","MCO","TPA","RSW","PBI"] },
+  { id: "south",      emoji: "🎸", title: "Southern Charm",       codes: ["ATL","CLT","BNA","RDU","MSY","MEM"] },
+  { id: "texas",      emoji: "🤠", title: "Texas & the Plains",   codes: ["AUS","SAT","DAL","DFW","OKC","TUL","ICT"] },
+  { id: "midwest",    emoji: "🌽", title: "Midwest Majors",       codes: ["MDW","MSP","DTW","STL","MCI","MKE","IND","OMA"] },
+  { id: "lakes",      emoji: "⚓", title: "Great Lakes & Rivers", codes: ["CLE","CMH","CVG","PIT","GRR","BUF","SDF"] },
+  { id: "hawaii",     emoji: "🌺", title: "Aloha, Hawaii",        codes: ["HNL","OGG","KOA","LIH","ITO"] },
+  { id: "california", emoji: "☀️", title: "California Dreaming",  codes: ["SJC","OAK","SMF","SNA","BUR","ONT","PSP","SBA"] },
+  { id: "outposts",   emoji: "🌵", title: "Desert & Sierra",      codes: ["RNO","TUS","ELP","COS","FAT","GEG","BOI"] },
+  { id: "frontier",   emoji: "🏔️", title: "Mountains & Frontier", codes: ["JAC","BZN","MTJ","SUN","ANC","EUG","MFR"] },
+  { id: "atlantic",   emoji: "🦀", title: "Atlantic Extras",      codes: ["BDL","ROC","RIC","ORF","CHS","JAX"] },
+  { id: "canada",     emoji: "🍁", title: "O Canada",             codes: ["YYZ","YVR","YUL","YYC","YOW"] },
+  { id: "mexico",     emoji: "🌮", title: "Viva México",          codes: ["MEX","CUN","GDL","SJD","PVR","CZM"] },
+  { id: "caribbean",  emoji: "🏝️", title: "Island Hopping",       codes: ["SJU","STT","AUA","NAS","MBJ","PUJ","SDQ"] },
+  { id: "central-am", emoji: "🌋", title: "Central America",      codes: ["LIR","SJO","PTY","GUA","SAL","BZE"] },
+  { id: "south-am",   emoji: "💃", title: "South America",        codes: ["GRU","GIG","EZE","SCL","LIM","BOG","UIO"] },
+  { id: "euro-icons", emoji: "🏰", title: "European Icons",       codes: ["LHR","CDG","FRA","AMS","FCO","MAD"] },
+  { id: "euro-2",     emoji: "🚂", title: "Euro Explorer",        codes: ["MUC","MXP","BCN","ZRH","BRU","DUB"] },
+  { id: "euro-3",     emoji: "🧭", title: "Europe North & South", codes: ["LIS","CPH","ATH","BER","EDI","KEF"] },
+  { id: "mideast",    emoji: "🕌", title: "Middle East & Africa", codes: ["TLV","DXB","DOH","AMM","CPT","JNB"] },
+  { id: "east-asia",  emoji: "🏮", title: "East Asia",            codes: ["NRT","HND","ICN","PVG","PEK","HKG","TPE"] },
+  { id: "south-asia", emoji: "🛕", title: "South & SE Asia",      codes: ["SIN","MNL","DEL","BOM","BKK"] },
+  { id: "oceania",    emoji: "🦘", title: "Down Under",           codes: ["SYD","MEL","BNE","AKL"] },
+];
+
+/*
+ * CREW NOTES — memory hooks for codes that don't spell their city.
+ * Shown when a new code is introduced and after a wrong answer (never during a
+ * live question). Codes not listed get an automatic hook when the code matches
+ * the city's letters (e.g. "DEN starts DENver").
+ */
+const HOOKS = {
+  ORD: "O'Hare was once ORcharD Field",
+  MDW: "MiDWay — Chicago's other airport",
+  MSY: "MoiSant stock Yards — New Orleans' old airfield",
+  MCO: "McCOy Air Force Base became Orlando's airport",
+  BNA: "BerryfieldNAshville",
+  CVG: "CoVinGton, Kentucky — just across the river from Cincinnati",
+  SDF: "StanDiFord Field — Louisville",
+  MCI: "Mid-Continent International — Kansas City",
+  GEG: "GEiGer Field — Spokane",
+  FAT: "Fresno Air Terminal",
+  IAD: "IAD is DIA flipped — Dulles International Airport",
+  IAH: "Intercontinental Airport, Houston",
+  EWR: "n-EW-a-Rk",
+  LGA: "LaGuArdia",
+  DCA: "D.C. Airport — Reagan sits right on the Potomac",
+  BWI: "Baltimore-Washington International",
+  YYZ: "Canadian codes start with Y — YYZ is Toronto",
+  YVR: "Y + VancouveR",
+  YUL: "Y + UL — Montreal's oddball",
+  YYC: "Y + Y-Calgary",
+  YOW: "Y + OW — OttaWa",
+  OGG: "Named for pilot Bertram HoGG — Maui",
+  KOA: "K-O-A: KOnA with a twist",
+  ITO: "Think 'hI-TO Hilo'",
+  SJD: "San José del cabo — Los Cabos",
+  CZM: "CoZuMel",
+  GRU: "GuaRUlhos — São Paulo's airport",
+  GIG: "Rio's Galeão — the GIG by the beach",
+  EZE: "EZEiza — Buenos Aires",
+  SCL: "Santiago de ChiLe",
+  LHR: "London HeathRow",
+  CDG: "Charles De Gaulle — Paris",
+  FCO: "Rome FiumiCinO",
+  MXP: "Milan MalPensa — think 'Milan eXPo'",
+  KEF: "KEFlavík — Reykjavik's airport",
+  HND: "HaNeDa — Tokyo downtown",
+  NRT: "NaRiTa — Tokyo's big international field",
+  ICN: "InCheoN — Seoul",
+  PVG: "Shanghai PudonG",
+  PEK: "PEKing — Beijing's old name",
+  TPE: "TaiPEi",
+  BOM: "BOMbay — Mumbai's old name",
+  BKK: "BangKoK",
+  AKL: "AucKLand",
+};
+
 // Make the dataset available both as a plain global (for <script> use) and as a
 // module export (handy for tests run under Node).
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { AIRPORTS, MAJOR_CITIES, airportTier };
+  module.exports = { AIRPORTS, MAJOR_CITIES, airportTier, UNITS, HOOKS };
 }

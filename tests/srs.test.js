@@ -203,4 +203,35 @@ test("summarize counts add up to the total", () => {
   assert.strictEqual(s.new + s.learning + s.mastered, s.total);
 });
 
+test("a Weather Delay (freeze) saves a streak across exactly one missed day", () => {
+  const DAY = Srs.SRS.DAY_MS;
+  const base = Date.UTC(2026, 5, 10, 15, 0, 0);
+  let s = { count: 5, best: 5, lastDay: Srs.localDayIndex(base) };
+
+  // missed one day, freeze banked -> streak survives and grows
+  let r = Srs.bumpStreakWithFreeze(s, base + 2 * DAY, 1);
+  assert.strictEqual(r.usedFreeze, true);
+  assert.strictEqual(r.streak.count, 6);
+
+  // missed one day, NO freeze -> reset to 1
+  r = Srs.bumpStreakWithFreeze(s, base + 2 * DAY, 0);
+  assert.strictEqual(r.usedFreeze, false);
+  assert.strictEqual(r.streak.count, 1);
+
+  // missed two days -> freeze can't save it
+  r = Srs.bumpStreakWithFreeze(s, base + 3 * DAY, 2);
+  assert.strictEqual(r.usedFreeze, false);
+  assert.strictEqual(r.streak.count, 1);
+
+  // same day twice -> unchanged, no freeze burned
+  r = Srs.bumpStreakWithFreeze(s, base + 3 * 60 * 60 * 1000, 1);
+  assert.strictEqual(r.usedFreeze, false);
+  assert.strictEqual(r.streak.count, 5);
+
+  // normal consecutive day -> no freeze burned
+  r = Srs.bumpStreakWithFreeze(s, base + DAY, 1);
+  assert.strictEqual(r.usedFreeze, false);
+  assert.strictEqual(r.streak.count, 6);
+});
+
 console.log(`\n${passed} tests passed.`);

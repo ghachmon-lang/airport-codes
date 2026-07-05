@@ -294,6 +294,28 @@ function bumpStreak(streak, now = Date.now()) {
   return { count, best, lastDay: today };
 }
 
+/*
+ * Streak bump with "Weather Delay" (streak freeze) support.
+ * Like bumpStreak, but if she missed EXACTLY one day and has a freeze banked,
+ * the freeze is consumed and the streak survives.
+ * Returns { streak, usedFreeze }.
+ */
+function bumpStreakWithFreeze(streak, now = Date.now(), freezes = 0) {
+  const prev = streak || { count: 0, best: 0, lastDay: null };
+  const today = localDayIndex(now);
+  if (prev.lastDay === today) return { streak: prev, usedFreeze: false };
+  if (prev.lastDay === today - 1) {
+    const count = prev.count + 1;
+    return { streak: { count, best: Math.max(prev.best || 0, count), lastDay: today }, usedFreeze: false };
+  }
+  if (prev.lastDay === today - 2 && freezes > 0 && prev.count > 0) {
+    // one missed day, shielded by a Weather Delay
+    const count = prev.count + 1;
+    return { streak: { count, best: Math.max(prev.best || 0, count), lastDay: today }, usedFreeze: true };
+  }
+  return { streak: { count: 1, best: Math.max(prev.best || 0, 1), lastDay: today }, usedFreeze: false };
+}
+
 // Export for both browser (<script>) and Node (tests).
 const SRS_API = {
   DIRECTIONS,
@@ -313,6 +335,7 @@ const SRS_API = {
   summarize,
   localDayIndex,
   bumpStreak,
+  bumpStreakWithFreeze,
 };
 
 if (typeof module !== "undefined" && module.exports) {

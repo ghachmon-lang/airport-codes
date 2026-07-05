@@ -1,7 +1,7 @@
 {
-  "name": "Airport Code Trainer",
-  "short_name": "Codes",
-  "description": "Adaptive flashcards for memorizing United airport codes and destinations.",
+  "name": "Corrine's Flight Academy",
+  "short_name": "Wings",
+  "description": "Learn every United destination — flights, miles, streaks, and kisses from Maple.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

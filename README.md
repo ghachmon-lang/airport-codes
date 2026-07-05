@@ -1,90 +1,68 @@
-# Airport Code Trainer ✈️
+# Corrine's Flight Academy ✈️🐕
 
-An adaptive flashcard web app for memorizing **United Airlines destinations** and their
-3-letter airport codes — built for flight-attendant training.
+A Duolingo-style game for learning **United's airport codes and destinations** — built
+for a flight-attendant trainee. No accounts, no backend, no cost: a self-contained
+PWA that runs offline and saves progress on the device.
 
-It uses **spaced repetition** (the technique behind Anki/Duolingo): codes you miss come
-back quickly and repeat until they stick, while codes you know get pushed further out and
-are only re-checked once in a while to confirm they held. The app adapts as you learn.
+## How the game works
 
-## Features
-
-- **Both directions** — quizzes both `Code → Destination` (DEN → Denver) and
-  `Destination → Code` (Denver → DEN), tracked separately.
-- **Self-graded flip cards** — read the prompt, think, tap to reveal, then tap
-  **Got it** or **Missed it**.
-- **Learn by getting it right** — answer a card correctly **4 times in a row** and it's
-  learned (achievable the same day); after that it's only checked occasionally. A miss
-  breaks the streak. Slip on one you already knew? Just **2 in a row** to refresh it.
-- **Curriculum-paced** — teaches hubs first, then major cities, then everything else,
-  adding new destinations only as you learn the current ones (no fixed per-session count).
-  Tune how many you juggle at once in Settings → "Cards to learn at once".
-- **Works offline** — installable to your phone's home screen (PWA); great on a plane.
-- **Progress saved on your device** — close it and pick up later. Export/import to back
-  up or move to another phone.
-- **No accounts, no backend, no cost.**
-
-## Use it on your phone
-
-1. Open the app's URL in your phone browser (see *Deploy* below).
-2. Tap the browser menu → **Add to Home Screen**.
-3. Open it like any app. It works without signal once loaded.
+- **The Flight Path** — 158 destinations grouped into 25 themed *routes* (The Hubs
+  first, then Big East, West Coast Stars, Sunshine State… through Europe, Asia and
+  Down Under). Each route has 2–3 *flights* plus a *landing* test. Finish a route and
+  the next gate opens.
+- **Flights are short and always land** — ~10 real, graded questions (~2 minutes):
+  multiple choice in both directions, letter-tile code building, and Baggage-Claim
+  match-the-pairs boards. Wrong answers come back at the end of the flight ("Final
+  approach — let's fix 2") so every session ends on a success.
+- **Miles, ranks, and the daily goal** — every correct answer earns Sky Miles
+  (combo bonuses at 3+ in a row, landing and flawless-flight bonuses, tight-connection
+  bonus for jumping straight into the next flight). Miles climb the crew ladder:
+  Trainee 🎓 → Flight Attendant ✈️ → Senior FA 🌟 → Purser 👑 → Chief Purser 🏆.
+- **Streaks with Weather Delays** — landing one flight a day keeps the streak alive.
+  Every 3 flawless flights banks a *Weather Delay* (streak shield, max 2 — also
+  buyable for 200 miles) that auto-protects a single missed day.
+- **Passport & badges** — every completed route stamps the passport; badges for
+  milestones (Hub Captain, Flawless Flight, Week in the Sky, Maple's Best Friend…).
+- **Maple the mascot 🐕** — reacts to every answer, guards streaks, and hands out
+  kisses when a destination is learned.
+- **Spaced repetition under the hood** — every answer feeds an SM-2-style scheduler
+  (`js/srs.js`). Due cards surface as a *Standby* flight so learned codes get
+  re-checked right before they'd fade. Memory hooks ("ORD was ORcharD Field") appear
+  when a code is introduced and after misses.
 
 ## Run locally
 
-It's plain HTML/CSS/JS — no build step. From the project folder:
-
 ```bash
-python3 -m http.server 8000
+python3 -m http.server 8000    # then open http://localhost:8000
 ```
-
-Then open <http://localhost:8000>.
-
-(A static server is needed so the service worker / module loading behave like production;
-opening `index.html` directly via `file://` mostly works but the offline cache won't.)
 
 ## Deploy free with GitHub Pages
 
-1. Push this repo to GitHub.
-2. Repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**.
-3. Pick the branch and the `/ (root)` folder, then **Save**.
-4. After a minute, your app is live at `https://<user>.github.io/<repo>/`. Share that URL.
+Repo **Settings → Pages → Deploy from a branch**, pick the branch + `/ (root)`.
+The service worker precaches everything, so it works in airplane mode after one load.
 
-## Editing the destination list
+## Editing the destinations
 
-All destinations live in **`js/data.js`** as a simple list:
-
-```js
-{ code: "DEN", city: "Denver", country: "United States", region: "Hub" }
-```
-
-Add, remove, or fix lines as needed. Editing the list **won't erase progress** — cards are
-matched by code + direction, and the app merges changes on load.
-
-> **Accuracy note:** the included list is a curated starter set of United's hubs and many
-> mainline destinations. Routes change over time, so verify it against the official United
-> training materials and correct anything here.
+`js/data.js` — one line per airport, plus the `UNITS` route grouping and `HOOKS`
+memory hooks. Edits never wipe progress (cards merge by code+direction).
 
 ## Project layout
 
 ```
-index.html            # the app shell / screens
-styles.css            # mobile-first styling
-js/data.js            # the United destinations dataset (edit me)
-js/srs.js             # spaced-repetition scheduler (the adaptive brain)
-js/storage.js         # save/load + export/import progress (localStorage)
-js/app.js             # ties everything to the UI
-manifest.webmanifest  # PWA metadata
-sw.js                 # service worker (offline caching)
-icons/                # app icons
-tests/srs.test.js     # tests for the scheduler
+index.html      app shell (path / lesson / boarding pass / passport / settings)
+styles.css      design system: 3D buttons, path nodes, boarding pass, confetti
+js/data.js      airports + route units + memory hooks (edit me)
+js/srs.js       spaced-repetition scheduler + streak/freeze logic
+js/game.js      graded question generation (choice, tiles, pairs) + distractors
+js/audio.js     synthesized sound effects (WebAudio, no assets)
+js/storage.js   persistence, export/import, v1→v2 migration
+js/app.js       the game orchestrator
+sw.js           offline cache
+tests/          node tests: srs.test.js, game.test.js
 ```
 
 ## Tests
 
 ```bash
-node tests/srs.test.js
+node tests/srs.test.js && node tests/game.test.js
 ```
-
-Verifies the core scheduling rules: correct answers grow the interval, misses shrink it and
-resurface fast, ease has a floor, mastery is reached, and progress survives data edits.
