@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corrine's Final Exam ✈️</title>
+<style>
+  :root{
+    --united-blue:#0033a0; --united-blue-2:#002b7f; --sky:#1f6feb;
+    --gold:#f5b400; --ink:#0e1730; --paper:#f4f7ff; --card:#ffffff;
+    --muted:#5b6784; --good:#1a9c5b; --bad:#d23b52; --line:#dbe3f2;
+    --shadow:0 10px 30px rgba(0,32,120,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:linear-gradient(180deg,#eaf1ff,#f6f9ff 260px);
+    line-height:1.5; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:20px 18px 80px}
+
+  header.hero{
+    background:linear-gradient(135deg,var(--united-blue),var(--sky));
+    color:#fff; border-radius:22px; padding:26px 24px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  header.hero:after{
+    content:"✈️"; position:absolute; right:-8px; top:-14px; font-size:120px; opacity:.14;
+    transform:rotate(18deg);
+  }
+  .badge{display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
+    padding:4px 12px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase}
+  header.hero h1{margin:12px 0 6px; font-size:30px; line-height:1.15}
+  header.hero p{margin:0; opacity:.95; max-width:56ch}
+
+  .scorebar{
+    position:sticky; top:0; z-index:20; margin:14px 0 6px;
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:12px 16px; display:flex; align-items:center;
+    gap:14px; flex-wrap:wrap;
+  }
+  .scorebar .tally{font-weight:800; font-size:17px}
+  .scorebar .tally b{color:var(--united-blue)}
+  .scorebar .pill{font-size:13px; color:var(--muted)}
+  .scorebar .grow{flex:1}
+  .btn{
+    border:none; cursor:pointer; font-weight:700; border-radius:12px; padding:9px 14px;
+    font-size:14px; background:#eef3ff; color:var(--united-blue); transition:.15s;
+  }
+  .btn:hover{background:#e2ebff}
+  .btn.ghost{background:transparent; color:var(--muted)}
+  .progressline{height:8px; border-radius:999px; background:#e7edfb; overflow:hidden; margin-top:8px}
+  .progressline > i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--good),#37c98a); transition:width .3s}
+
+  .levelhead{
+    margin:30px 0 10px; display:flex; align-items:center; gap:10px;
+  }
+  .levelhead .num{background:var(--united-blue); color:#fff; font-weight:800; border-radius:10px; padding:4px 10px; font-size:13px}
+  .levelhead h2{margin:0; font-size:19px}
+  .levelhead .sub{color:var(--muted); font-size:13px}
+
+  .q{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:16px 16px 14px; margin:12px 0; box-shadow:0 4px 14px rgba(0,32,120,.05);
+  }
+  .q .qtop{display:flex; gap:12px; align-items:flex-start}
+  .q .qn{
+    flex:none; width:34px; height:34px; border-radius:10px; background:#eef3ff; color:var(--united-blue);
+    font-weight:800; display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .q .qbody{flex:1}
+  .q .prompt{font-size:15.5px}
+  .q .prompt code{background:#eef2fb; padding:1px 6px; border-radius:6px; font-weight:700; font-family:ui-monospace,Menlo,Consolas,monospace}
+  .q .warn{color:var(--bad); font-weight:600}
+
+  .answer{
+    margin-top:12px; border-top:1px dashed var(--line); padding-top:12px; display:none;
+  }
+  .answer.show{display:block}
+  .answer .lbl{font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:800; margin-bottom:4px}
+  .answer .txt{font-size:15px}
+  .answer .txt b{color:var(--united-blue)}
+  .answer .txt code{background:#eafaf1; color:#0b6b3f; padding:1px 6px; border-radius:6px; font-weight:800; font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .qactions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+  .qactions .reveal{background:#fff4d6; color:#8a6100}
+  .qactions .reveal:hover{background:#ffedbf}
+  .mark{border:1px solid var(--line); background:#fff}
+  .mark.right{color:var(--good); border-color:#bfe8d1}
+  .mark.right.active{background:var(--good); color:#fff; border-color:var(--good)}
+  .mark.wrong{color:var(--bad); border-color:#f3c6cf}
+  .mark.wrong.active{background:var(--bad); color:#fff; border-color:var(--bad)}
+  .q.answered-right{border-color:#bfe8d1; box-shadow:0 0 0 2px #d9f2e4 inset}
+  .q.answered-wrong{border-color:#f3c6cf; box-shadow:0 0 0 2px #fbe0e5 inset}
+
+  .result{
+    margin-top:26px; background:linear-gradient(135deg,#0b2a6b,#1f6feb); color:#fff;
+    border-radius:20px; padding:22px; box-shadow:var(--shadow); display:none;
+  }
+  .result.show{display:block}
+  .result h3{margin:0 0 6px; font-size:22px}
+  .result p{margin:0; opacity:.95}
+  .result .big{font-size:40px; font-weight:900; margin:6px 0}
+
+  footer.note{color:var(--muted); font-size:13px; margin-top:34px; text-align:center}
+  .scale{margin-top:10px; font-size:13.5px; color:var(--muted)}
+  .scale li{margin:2px 0}
+
+  @media print{
+    body{background:#fff}
+    .scorebar,.qactions,.btn{display:none !important}
+    .answer{display:block !important; border-top:1px dashed #bbb}
+    .q,header.hero,.result{box-shadow:none}
+    header.hero{color:#000; background:#fff; border:2px solid #0033a0}
+    header.hero:after{display:none}
+    .result{color:#000; background:#fff; border:2px solid #0033a0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="badge">The Check Ride · Level: Chief Purser</span>
+    <h1>Corrine's Final Exam ✈️</h1>
+    <p>Twenty free-recall questions — no multiple choice, no hints. Answer out loud or on
+    paper, then tap <b>Reveal</b> and score yourself honestly. Every part must be right to
+    get the point. <b>Passing is 18/20.</b></p>
+  </header>
+
+  <div class="scorebar">
+    <div class="tally">Score: <b><span id="right">0</span></b> / <span id="graded">0</span> graded</div>
+    <span class="pill">of 20 total</span>
+    <div class="progressline grow"><i id="bar"></i></div>
+    <button class="btn" onclick="revealAll()">Reveal all</button>
+    <button class="btn ghost" onclick="resetAll()">Reset</button>
+    <button class="btn ghost" onclick="window.print()">🖨️ Print</button>
+  </div>
+
+  <!-- ===================== LEVEL 1 ===================== -->
+  <div class="levelhead">
+    <span class="num">L1</span>
+    <div><h2>Warm-Up</h2><div class="sub">Still not easy.</div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">1</div><div class="qbody">
+      <div class="prompt">Give the code for each hub, in order: Chicago O'Hare, Denver,
+      Houston (Bush), Newark, San Francisco, Los Angeles, Washington Dulles, and the one
+      hub that isn't in the continental U.S.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        <code>ORD</code> <code>DEN</code> <code>IAH</code> <code>EWR</code> <code>SFO</code>
+        <code>LAX</code> <code>IAD</code> — and <code>GUM</code> (Guam), the non-continental hub.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">2</div><div class="qbody">
+      <div class="prompt">New York City has three of our airports. Name all three codes
+      <b>and</b> say which one is United's <b>hub</b>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        <code>JFK</code> (New York JFK), <code>LGA</code> (LaGuardia), <code>EWR</code> (Newark).
+        <b>EWR is the hub.</b>
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">3</div><div class="qbody">
+      <div class="prompt">Two of our airports serve Dallas. Give both codes and the full
+      airport name each stands for.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        <code>DAL</code> = Dallas Love Field · <code>DFW</code> = Dallas/Fort Worth.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">4</div><div class="qbody">
+      <div class="prompt">Name the city for each: <code>PDX</code>, <code>MSY</code>,
+      <code>BNA</code>, <code>RDU</code>, <code>SDF</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        PDX = Portland (OR) · MSY = New Orleans · BNA = Nashville · RDU = Raleigh/Durham ·
+        SDF = Louisville.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">5</div><div class="qbody">
+      <div class="prompt">Chicago and Washington each have two of our airports. Give all
+      four codes and label which city each belongs to.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Chicago: <code>ORD</code> (O'Hare) &amp; <code>MDW</code> (Midway). Washington:
+        <code>IAD</code> (Dulles) &amp; <code>DCA</code> (Reagan).
+      </div></div>
+    </div></div>
+  </div>
+
+  <!-- ===================== LEVEL 2 ===================== -->
+  <div class="levelhead">
+    <span class="num">L2</span>
+    <div><h2>Cruising Altitude</h2><div class="sub">The confusable clusters.</div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">6</div><div class="qbody">
+      <div class="prompt">Hawaii has five destinations. Give the airport code for <b>each
+      island</b> and name the island: Oahu, Maui, Kauai, the Kona side of the Big Island,
+      and the Hilo side of the Big Island.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Oahu = <code>HNL</code> (Honolulu) · Maui = <code>OGG</code> (Kahului) · Kauai =
+        <code>LIH</code> (Lihue) · Kona = <code>KOA</code> · Hilo = <code>ITO</code>.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">7</div><div class="qbody">
+      <div class="prompt">Canada's codes share one starting letter. Give the code for
+      Toronto, Vancouver, Montreal, Calgary, and Ottawa — <b>and</b> the letter they share.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Toronto <code>YYZ</code>, Vancouver <code>YVR</code>, Montreal <code>YUL</code>,
+        Calgary <code>YYC</code>, Ottawa <code>YOW</code>. They all start with <b>Y</b>.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">8</div><div class="qbody">
+      <div class="prompt">Tokyo has two airports. Give both codes, the full name of each,
+      and say which sits closer to downtown.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        <code>NRT</code> = Tokyo Narita (big international field, farther out) ·
+        <code>HND</code> = Tokyo Haneda (<b>closer to downtown</b>).
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">9</div><div class="qbody">
+      <div class="prompt">Name the country for each: <code>TLV</code>, <code>DOH</code>,
+      <code>AMM</code>, <code>DXB</code>, <code>KEF</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        TLV = Israel · DOH = Qatar · AMM = Jordan · DXB = United Arab Emirates · KEF = Iceland.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">10</div><div class="qbody">
+      <div class="prompt">These codes don't spell their city. Name the city for each:
+      <code>GRU</code>, <code>GIG</code>, <code>EZE</code>, <code>SCL</code>, <code>UIO</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        GRU = São Paulo · GIG = Rio de Janeiro · EZE = Buenos Aires · SCL = Santiago · UIO = Quito.
+      </div></div>
+    </div></div>
+  </div>
+
+  <!-- ===================== LEVEL 3 ===================== -->
+  <div class="levelhead">
+    <span class="num">L3</span>
+    <div><h2>The Trainer Is Trying to Fail You</h2><div class="sub">No partial credit.</div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">11</div><div class="qbody">
+      <div class="prompt"><code>SJC</code> and <code>SJO</code> are one letter apart and both
+      mean "San Jose." Give the city, <b>state or country</b>, and region (Domestic vs.
+      International) for each.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        <code>SJC</code> = San Jose, <b>California</b>, Domestic. <code>SJO</code> = San José,
+        <b>Costa Rica</b>, International.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">12</div><div class="qbody">
+      <div class="prompt">Give the U.S. city — no partial credit: <code>MCO</code>,
+      <code>MCI</code>, <code>CVG</code>, <code>GEG</code>, <code>FAT</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        MCO = Orlando · MCI = Kansas City · CVG = Cincinnati · GEG = Spokane · FAT = Fresno.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">13</div><div class="qbody">
+      <div class="prompt">City → code: Sacramento, Santa Ana / Orange County, Fort Myers,
+      West Palm Beach, Bozeman.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Sacramento <code>SMF</code> · Santa Ana/Orange County <code>SNA</code> · Fort Myers
+        <code>RSW</code> · West Palm Beach <code>PBI</code> · Bozeman <code>BZN</code>.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">14</div><div class="qbody">
+      <div class="prompt">Central America, city → code: Panama City, San José (Costa Rica),
+      Guatemala City, San Salvador, Belize City. <span class="warn">One looks a lot like a
+      question-11 answer.</span></div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Panama City <code>PTY</code> · San José, Costa Rica <code>SJO</code> · Guatemala City
+        <code>GUA</code> · San Salvador <code>SAL</code> · Belize City <code>BZE</code>.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">15</div><div class="qbody">
+      <div class="prompt">Match each code to its <b>country</b>, not its city: <code>MBJ</code>,
+      <code>PUJ</code>, <code>SDQ</code>, <code>AUA</code>, <code>STT</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        MBJ = Jamaica · PUJ = Dominican Republic · SDQ = Dominican Republic · AUA = Aruba ·
+        STT = U.S. Virgin Islands.
+      </div></div>
+    </div></div>
+  </div>
+
+  <!-- ===================== LEVEL 4 ===================== -->
+  <div class="levelhead">
+    <span class="num">L4</span>
+    <div><h2>Purser-Level (brutal)</h2><div class="sub">Rapid fire. All parts or zero.</div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">16</div><div class="qbody">
+      <div class="prompt">Europe, code → city: <code>CDG</code>, <code>FCO</code>,
+      <code>MXP</code>, <code>MUC</code>, <code>BCN</code>, <code>ZRH</code>, <code>LIS</code>,
+      <code>EDI</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        CDG = Paris · FCO = Rome · MXP = Milan · MUC = Munich · BCN = Barcelona · ZRH = Zurich ·
+        LIS = Lisbon · EDI = Edinburgh.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">17</div><div class="qbody">
+      <div class="prompt">East Asia, code → city (and note the two that are in <b>China</b>):
+      <code>NRT</code>, <code>ICN</code>, <code>PVG</code>, <code>PEK</code>, <code>HKG</code>,
+      <code>TPE</code>.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        NRT = Tokyo · ICN = Seoul · PVG = Shanghai · PEK = Beijing · HKG = Hong Kong · TPE = Taipei.
+        <b>In China: PVG (Shanghai) &amp; PEK (Beijing).</b>
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">18</div><div class="qbody">
+      <div class="prompt">Some codes carry a story. For <code>ORD</code>, <code>MCO</code>, and
+      <code>MSY</code>, name the city <b>and</b> the historical reason the code isn't obvious.</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        ORD = Chicago O'Hare — from <b>ORcharD Field</b>. MCO = Orlando — from <b>McCoy</b> Air
+        Force Base. MSY = New Orleans — from the old <b>Moisant</b> Stock Yards airfield.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">19</div><div class="qbody">
+      <div class="prompt">South/SE Asia + Oceania, city → code: Singapore, Manila, Delhi,
+      Mumbai, Bangkok, Sydney, Auckland. Then: which is <b>not</b> in Australia, and what
+      country is it in?</div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Singapore <code>SIN</code> · Manila <code>MNL</code> · Delhi <code>DEL</code> · Mumbai
+        <code>BOM</code> · Bangkok <code>BKK</code> · Sydney <code>SYD</code> · Auckland
+        <code>AKL</code>. <b>AKL is in New Zealand</b>, not Australia.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="q" data-q>
+    <div class="qtop"><div class="qn">20</div><div class="qbody">
+      <div class="prompt">The Lightning Round — give the code, no thinking out loud: Reykjavik,
+      Tel Aviv, Cape Town, Johannesburg, Punta Cana, Los Cabos, Cozumel, Guadalajara, Quito,
+      Lima, Bogotá, Guam. <span class="warn">All twelve, or this question is zero.</span></div>
+      <div class="answer"><div class="lbl">Answer</div><div class="txt">
+        Reykjavik <code>KEF</code> · Tel Aviv <code>TLV</code> · Cape Town <code>CPT</code> ·
+        Johannesburg <code>JNB</code> · Punta Cana <code>PUJ</code> · Los Cabos <code>SJD</code> ·
+        Cozumel <code>CZM</code> · Guadalajara <code>GDL</code> · Quito <code>UIO</code> · Lima
+        <code>LIM</code> · Bogotá <code>BOG</code> · Guam <code>GUM</code>.
+      </div></div>
+    </div></div>
+  </div>
+
+  <div class="result" id="result">
+    <h3 id="rTitle">Check ride complete</h3>
+    <div class="big"><span id="rScore">0</span> / 20</div>
+    <p id="rMsg"></p>
+  </div>
+
+  <footer class="note">
+    Corrine's Flight Academy · United destinations · free-recall check ride.<br>
+    Print this page for a paper exam — answers show automatically in print, so cut the key off first.
+  </footer>
+
+  <div class="scale">
+    <b>How'd she do?</b>
+    <ul>
+      <li><b>20/20</b> — Chief Purser 🏆. She knows the map cold.</li>
+      <li><b>18–19</b> — Cleared to fly. Circle the misses and re-run those routes.</li>
+      <li><b>15–17</b> — Close, but a passenger will catch her. Back to Standby flights.</li>
+      <li><b>&lt;15</b> — More reps. The confusable pairs (Q11, Q14) and story codes (Q18) bleed the most points.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const TOTAL = 20;
+
+  function buildActions(q){
+    const answer = q.querySelector('.answer');
+    const bar = document.createElement('div');
+    bar.className = 'qactions';
+    bar.innerHTML =
+      '<button class="btn reveal">Reveal</button>' +
+      '<button class="btn mark right">✓ I got it</button>' +
+      '<button class="btn mark wrong">✗ Missed it</button>';
+    q.querySelector('.qbody').appendChild(bar);
+
+    const reveal = bar.querySelector('.reveal');
+    const right  = bar.querySelector('.right');
+    const wrong  = bar.querySelector('.wrong');
+
+    reveal.addEventListener('click', ()=>{ answer.classList.add('show'); });
+
+    function setMark(state){
+      answer.classList.add('show');
+      q.dataset.mark = state;
+      right.classList.toggle('active', state==='right');
+      wrong.classList.toggle('active', state==='wrong');
+      q.classList.toggle('answered-right', state==='right');
+      q.classList.toggle('answered-wrong', state==='wrong');
+      updateScore();
+    }
+    right.addEventListener('click', ()=> setMark(q.dataset.mark==='right' ? '' : 'right'));
+    wrong.addEventListener('click', ()=> setMark(q.dataset.mark==='wrong' ? '' : 'wrong'));
+  }
+
+  function updateScore(){
+    const qs = [...document.querySelectorAll('[data-q]')];
+    const right  = qs.filter(q=>q.dataset.mark==='right').length;
+    const graded = qs.filter(q=>q.dataset.mark==='right'||q.dataset.mark==='wrong').length;
+    document.getElementById('right').textContent = right;
+    document.getElementById('graded').textContent = graded;
+    document.getElementById('bar').style.width = (right/TOTAL*100) + '%';
+
+    const res = document.getElementById('result');
+    if(graded === TOTAL){
+      res.classList.add('show');
+      document.getElementById('rScore').textContent = right;
+      let msg, title;
+      if(right===20){ title='Chief Purser 🏆'; msg='Perfect. She knows the map cold. Cleared for anything.'; }
+      else if(right>=18){ title='Cleared to Fly ✈️'; msg='Passing. Circle the misses and re-run just those routes.'; }
+      else if(right>=15){ title='Almost There 🌤️'; msg='Close, but a passenger will catch her. Back to the Standby flights.'; }
+      else { title='More Reps Needed 🛫'; msg='The confusable pairs (Q11, Q14) and story codes (Q18) are where most points go.'; }
+      document.getElementById('rTitle').textContent = title;
+      document.getElementById('rMsg').textContent = msg;
+      res.scrollIntoView({behavior:'smooth', block:'center'});
+    } else {
+      res.classList.remove('show');
+    }
+  }
+
+  function revealAll(){ document.querySelectorAll('.answer').forEach(a=>a.classList.add('show')); }
+  function resetAll(){
+    document.querySelectorAll('[data-q]').forEach(q=>{
+      q.dataset.mark=''; q.classList.remove('answered-right','answered-wrong');
+      q.querySelectorAll('.mark').forEach(m=>m.classList.remove('active'));
+      q.querySelector('.answer').classList.remove('show');
+    });
+    document.getElementById('result').classList.remove('show');
+    updateScore();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  document.querySelectorAll('[data-q]').forEach(buildActions);
+  updateScore();
+</script>
+</body>
+</html>

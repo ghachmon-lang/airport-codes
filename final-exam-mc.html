@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corrine's Final Exam — Multiple Choice ✈️</title>
+<style>
+  :root{
+    --united-blue:#0033a0; --sky:#1f6feb; --gold:#f5b400;
+    --ink:#0e1730; --card:#fff; --muted:#5b6784; --good:#1a9c5b; --bad:#d23b52;
+    --line:#dbe3f2; --shadow:0 10px 30px rgba(0,32,120,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:linear-gradient(180deg,#eaf1ff,#f6f9ff 260px);
+    line-height:1.5; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:20px 18px 90px}
+
+  header.hero{
+    background:linear-gradient(135deg,var(--united-blue),var(--sky));
+    color:#fff; border-radius:22px; padding:26px 24px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  header.hero:after{content:"✈️"; position:absolute; right:-8px; top:-14px; font-size:120px; opacity:.14; transform:rotate(18deg)}
+  .badge{display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
+    padding:4px 12px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase}
+  header.hero h1{margin:12px 0 6px; font-size:28px; line-height:1.15}
+  header.hero p{margin:0; opacity:.95; max-width:56ch}
+
+  .scorebar{
+    position:sticky; top:0; z-index:20; margin:14px 0 6px; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+    padding:12px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .scorebar .tally{font-weight:800; font-size:16px}
+  .scorebar .tally b{color:var(--united-blue)}
+  .scorebar .grow{flex:1}
+  .progressline{height:8px; border-radius:999px; background:#e7edfb; overflow:hidden}
+  .progressline > i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--sky),var(--united-blue)); transition:width .3s}
+
+  .q{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin:12px 0; box-shadow:0 4px 14px rgba(0,32,120,.05)}
+  .q .qhead{display:flex; gap:12px; align-items:flex-start; margin-bottom:10px}
+  .q .qn{flex:none; width:32px; height:32px; border-radius:9px; background:#eef3ff; color:var(--united-blue); font-weight:800; display:flex; align-items:center; justify-content:center; font-size:14px}
+  .q .prompt{font-size:16px; font-weight:600}
+  .q .prompt code{background:#eef2fb; padding:1px 6px; border-radius:6px; font-weight:800; font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .opts{display:flex; flex-direction:column; gap:8px}
+  .opt{
+    display:flex; align-items:center; gap:10px; padding:11px 13px; border:2px solid var(--line);
+    border-radius:12px; cursor:pointer; font-size:15px; background:#fff; transition:.12s; user-select:none;
+  }
+  .opt:hover{border-color:#b9caf0; background:#f7faff}
+  .opt .key{flex:none; width:26px; height:26px; border-radius:7px; background:#eef3ff; color:var(--united-blue);
+    font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center}
+  .opt.sel{border-color:var(--sky); background:#eef5ff}
+  .opt.sel .key{background:var(--sky); color:#fff}
+  .opt input{display:none}
+
+  /* graded states */
+  .graded .opt{cursor:default}
+  .graded .opt.correct{border-color:var(--good); background:#e9f9f0}
+  .graded .opt.correct .key{background:var(--good); color:#fff}
+  .graded .opt.wrongpick{border-color:var(--bad); background:#fdecef}
+  .graded .opt.wrongpick .key{background:var(--bad); color:#fff}
+  .verdict{margin-top:10px; font-size:14px; font-weight:700; display:none}
+  .graded .verdict{display:block}
+  .verdict.ok{color:var(--good)}
+  .verdict.no{color:var(--bad)}
+  .verdict small{display:block; font-weight:600; color:var(--muted); margin-top:2px}
+
+  .submitbar{position:sticky; bottom:0; margin-top:18px; padding:14px 0}
+  .btn{border:none; cursor:pointer; font-weight:800; border-radius:14px; padding:14px 18px; font-size:16px; width:100%;
+    background:var(--united-blue); color:#fff; box-shadow:0 6px 0 #002270; transition:.08s}
+  .btn:active{transform:translateY(3px); box-shadow:0 3px 0 #002270}
+  .btn.ghost{background:#eef3ff; color:var(--united-blue); box-shadow:0 4px 0 #cdd9f5}
+  .btn.small{width:auto; font-size:14px; padding:9px 14px; box-shadow:none}
+
+  .result{margin-top:8px; background:linear-gradient(135deg,#0b2a6b,#1f6feb); color:#fff; border-radius:20px; padding:22px; box-shadow:var(--shadow); display:none}
+  .result.show{display:block}
+  .result h3{margin:0 0 4px; font-size:22px}
+  .result .big{font-size:42px; font-weight:900; margin:4px 0}
+  .result p{margin:0; opacity:.95}
+
+  footer.note{color:var(--muted); font-size:13px; margin-top:30px; text-align:center}
+
+  @media print{
+    body{background:#fff}
+    .scorebar,.submitbar,.btn{display:none !important}
+    .graded .verdict, .opt.correct{ }
+    .q,header.hero,.result{box-shadow:none}
+    header.hero{color:#000; background:#fff; border:2px solid #0033a0}
+    header.hero:after{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="badge">The Check Ride · Multiple Choice</span>
+    <h1>Corrine's Final Exam ✈️</h1>
+    <p>Twenty questions, four choices each — but the wrong answers are the codes people
+    actually mix up. Pick one per question, then hit <b>Submit</b> to auto-grade.
+    <b>Passing is 18/20.</b></p>
+  </header>
+
+  <div class="scorebar">
+    <div class="tally"><span id="answered">0</span> of 20 answered</div>
+    <div class="progressline grow"><i id="bar"></i></div>
+    <button class="btn ghost small" onclick="resetAll()">Reset</button>
+  </div>
+
+  <form id="exam"></form>
+
+  <div class="submitbar">
+    <button class="btn" id="submitBtn" onclick="grade()">Submit exam</button>
+  </div>
+
+  <div class="result" id="result">
+    <h3 id="rTitle"></h3>
+    <div class="big"><span id="rScore">0</span> / 20</div>
+    <p id="rMsg"></p>
+    <button class="btn ghost small" style="margin-top:12px" onclick="resetAll()">Retake</button>
+  </div>
+
+  <footer class="note">
+    Corrine's Flight Academy · United destinations · multiple-choice check ride.<br>
+    Prefer no hints? The free-recall version lives at <b>final-exam.html</b>.
+  </footer>
+</div>
+
+<script>
+/* Each question: prompt, 4 options, and the index of the correct one.
+   Distractors are deliberately the real look-alikes from the route map. */
+const QUESTIONS = [
+  { q:'<code>ORD</code> is which airport?',
+    o:['Orlando','Chicago O’Hare','Chicago Midway','Ontario (CA)'], a:1,
+    why:'ORD = O’Hare (from ORcharD Field). Orlando is MCO, Midway is MDW, Ontario is ONT.' },
+
+  { q:'Which of these is <b>not</b> a United hub?',
+    o:['IAH (Houston)','GUM (Guam)','ATL (Atlanta)','SFO (San Francisco)'], a:2,
+    why:'The hubs are ORD, DEN, IAH, EWR, SFO, LAX, IAD and GUM. Atlanta is a domestic destination.' },
+
+  { q:'United’s New York <b>hub</b> is:',
+    o:['JFK','LGA','EWR','SWF'], a:2,
+    why:'Newark (EWR) is the hub. JFK and LGA are flown, but Newark is home base.' },
+
+  { q:'Which code is <b>Dallas Love Field</b>?',
+    o:['DFW','DAL','DAB','HOU'], a:1,
+    why:'DAL = Love Field. DFW is the big Dallas/Fort Worth airport.' },
+
+  { q:'<b>Washington Dulles</b> is:',
+    o:['DCA','IAD','BWI','DUL'], a:1,
+    why:'IAD = Dulles. DCA is Reagan National; BWI is Baltimore.' },
+
+  { q:'<code>OGG</code> serves which Hawaiian island?',
+    o:['Oahu','Kauai','Maui','the Big Island'], a:2,
+    why:'OGG = Kahului, Maui. Oahu is HNL, Kauai is LIH.' },
+
+  { q:'Kona <code>KOA</code> is on which island?',
+    o:['Maui','the Big Island','Kauai','Oahu'], a:1,
+    why:'KOA (Kona) and ITO (Hilo) are both on the Big Island.' },
+
+  { q:'<code>NRT</code> is:',
+    o:['Tokyo Haneda','Tokyo Narita','Seoul','Osaka'], a:1,
+    why:'NRT = Narita, Tokyo’s big international field. Haneda is HND.' },
+
+  { q:'Which Tokyo airport is <b>closer to downtown</b>?',
+    o:['NRT','HND','ICN','TPE'], a:1,
+    why:'HND = Haneda, right in the city. NRT (Narita) is farther out.' },
+
+  { q:'Canadian airport codes all start with which letter?',
+    o:['C','V','Y','M'], a:2,
+    why:'They’re all Y: Toronto YYZ, Vancouver YVR, Montreal YUL, Calgary YYC, Ottawa YOW.' },
+
+  { q:'<code>YUL</code> is which city?',
+    o:['Toronto','Vancouver','Montreal','Ottawa'], a:2,
+    why:'YUL = Montreal. Toronto YYZ, Vancouver YVR, Ottawa YOW.' },
+
+  { q:'<b>San Jose, California</b> is:',
+    o:['SJO','SJC','SNA','SJD'], a:1,
+    why:'SJC = San Jose, CA. SJO is San José, Costa Rica; SNA is Santa Ana; SJD is Los Cabos.' },
+
+  { q:'<code>SJO</code> is:',
+    o:['San Jose, California','San Juan, Puerto Rico','San José, Costa Rica','San Salvador'], a:2,
+    why:'SJO = San José, Costa Rica (International). Don’t confuse with SJC.' },
+
+  { q:'<code>MCO</code> is which U.S. city?',
+    o:['Kansas City','Orlando','Oklahoma City','Montego Bay'], a:1,
+    why:'MCO = Orlando (from McCoy AFB). Kansas City is MCI, Oklahoma City is OKC.' },
+
+  { q:'Which code is <b>Kansas City</b>?',
+    o:['MCI','MKC','MCO','KAN'], a:0,
+    why:'MCI = Kansas City (Mid-Continent Intl). MCO is Orlando.' },
+
+  { q:'<code>CVG</code> serves which city?',
+    o:['Columbus','Cleveland','Cincinnati','Charleston'], a:2,
+    why:'CVG = Cincinnati (its airport is in Covington, KY). Columbus CMH, Cleveland CLE.' },
+
+  { q:'<code>GRU</code> is which city?',
+    o:['Rio de Janeiro','São Paulo','Buenos Aires','Santiago'], a:1,
+    why:'GRU = São Paulo (Guarulhos). Rio is GIG, Buenos Aires EZE, Santiago SCL.' },
+
+  { q:'<code>TLV</code> is in which country?',
+    o:['Jordan','Israel','United Arab Emirates','Qatar'], a:1,
+    why:'TLV = Tel Aviv, Israel. Amman AMM is Jordan, Dubai DXB is the UAE, Doha DOH is Qatar.' },
+
+  { q:'<code>CDG</code> is which city?',
+    o:['Rome','Frankfurt','Paris','Amsterdam'], a:2,
+    why:'CDG = Paris (Charles de Gaulle). Rome FCO, Frankfurt FRA, Amsterdam AMS.' },
+
+  { q:'<code>AKL</code> is Auckland — which country?',
+    o:['Australia','New Zealand','Fiji','Samoa'], a:1,
+    why:'AKL = Auckland, New Zealand — not Australia. Sydney SYD, Melbourne MEL are the Aussie ones.' },
+];
+
+const LETTERS = ['A','B','C','D'];
+const form = document.getElementById('exam');
+let graded = false;
+
+QUESTIONS.forEach((item, i) => {
+  const card = document.createElement('div');
+  card.className = 'q';
+  card.dataset.i = i;
+  const opts = item.o.map((text, j) => `
+    <label class="opt" data-j="${j}">
+      <span class="key">${LETTERS[j]}</span>
+      <input type="radio" name="q${i}" value="${j}">
+      <span class="txt">${text}</span>
+    </label>`).join('');
+  card.innerHTML = `
+    <div class="qhead"><div class="qn">${i+1}</div><div class="prompt">${item.q}</div></div>
+    <div class="opts">${opts}</div>
+    <div class="verdict"></div>`;
+  form.appendChild(card);
+});
+
+form.addEventListener('change', (e) => {
+  if (graded) return;
+  const card = e.target.closest('.q');
+  card.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+  e.target.closest('.opt').classList.add('sel');
+  updateProgress();
+});
+
+function updateProgress(){
+  const answered = QUESTIONS.filter((_, i) => form.querySelector(`input[name="q${i}"]:checked`)).length;
+  document.getElementById('answered').textContent = answered;
+  document.getElementById('bar').style.width = (answered/QUESTIONS.length*100) + '%';
+}
+
+function grade(){
+  graded = true;
+  let score = 0;
+  QUESTIONS.forEach((item, i) => {
+    const card = form.querySelector(`.q[data-i="${i}"]`);
+    card.classList.add('graded');
+    const picked = form.querySelector(`input[name="q${i}"]:checked`);
+    const pj = picked ? Number(picked.value) : -1;
+    card.querySelectorAll('.opt').forEach(o => {
+      const j = Number(o.dataset.j);
+      if (j === item.a) o.classList.add('correct');
+      if (j === pj && pj !== item.a) o.classList.add('wrongpick');
+    });
+    const v = card.querySelector('.verdict');
+    if (pj === item.a){
+      score++;
+      v.className = 'verdict ok';
+      v.innerHTML = '✓ Correct';
+    } else {
+      v.className = 'verdict no';
+      v.innerHTML = (pj === -1 ? '— Skipped' : '✗ Not quite') +
+        `<small>${item.why}</small>`;
+    }
+  });
+
+  document.getElementById('submitBtn').style.display = 'none';
+  const res = document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('rScore').textContent = score;
+  let title, msg;
+  if (score === 20){ title='Chief Purser 🏆'; msg='Perfect. She knows the map cold.'; }
+  else if (score >= 18){ title='Cleared to Fly ✈️'; msg='Passing. Review the two she missed and she’s solid.'; }
+  else if (score >= 15){ title='Almost There 🌤️'; msg='Close, but a passenger will catch her. Re-run the misses below.'; }
+  else { title='More Reps Needed 🛫'; msg='The look-alike codes are the ones biting her — scroll up for why.'; }
+  document.getElementById('rTitle').textContent = title;
+  document.getElementById('rMsg').textContent = msg;
+  res.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function resetAll(){
+  graded = false;
+  form.querySelectorAll('.q').forEach(c => c.classList.remove('graded'));
+  form.querySelectorAll('.opt').forEach(o => o.classList.remove('sel','correct','wrongpick'));
+  form.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+  form.querySelectorAll('.verdict').forEach(v => v.innerHTML = '');
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('submitBtn').style.display = '';
+  updateProgress();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
