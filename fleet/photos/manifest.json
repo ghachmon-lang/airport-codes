@@ -271,5 +271,54 @@
     "credit": "Acroterion",
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_777-300ER_N2136U_IAD_VA1.jpg"
+  },
+  {
+    "type": "b787-8",
+    "file": "b787-8_1.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_787-8_N30913_at_Dublin_May_2025.jpg"
+  },
+  {
+    "type": "b787-8",
+    "file": "b787-8_2.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_787-8_N27908_IAD_VA2.jpg"
+  },
+  {
+    "type": "b787-8",
+    "file": "b787-8_3.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_787-8_N28912_IAD_VA1.jpg"
+  },
+  {
+    "type": "b737-800",
+    "file": "b737-800_1.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-800_N73270_at_Taoyuan_February_2026_1.jpg"
+  },
+  {
+    "type": "b737-800",
+    "file": "b737-800_2.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-800_N76519_BWI_MD1.jpg"
+  },
+  {
+    "type": "b767-300er",
+    "file": "b767-300er_1.jpg",
+    "credit": "Steve Lynes from Sandshurst, United Kingdom",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_B767-300ER_(N676UA)_@_LHR,_Feb_2020.jpg"
+  },
+  {
+    "type": "b767-300er",
+    "file": "b767-300er_3.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_767-300ER_N643UA_MD1.jpg"
   }
 ]
