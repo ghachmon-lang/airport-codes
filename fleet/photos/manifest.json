@@ -1,44 +1,163 @@
 [
   {
+    "type": "b737-800",
+    "file": "b737-800_5.jpg",
+    "credit": "Bill Abbott",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737_-800_NG_MAX_N33289_Arriving_SFO_light_ref_L1180211.jpg"
+  },
+  {
+    "type": "b737-max9",
+    "file": "b737-max9_1.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-9_MAX_N37545_departing_Boston_August_2025.jpg"
+  },
+  {
+    "type": "b737-max9",
+    "file": "b737-max9_2.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-9_MAX_N27586_departing_Boston_June_2025.jpg"
+  },
+  {
+    "type": "b737-max9",
+    "file": "b737-max9_3.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-9_MAX_N77590_departing_Boston_June_2025_2.jpg"
+  },
+  {
+    "type": "b737-max9",
+    "file": "b737-max9_5.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-9_MAX_N77587_departing_Boston_June_2025.jpg"
+  },
+  {
+    "type": "a319",
+    "file": "a319_1.jpg",
+    "credit": "Bill Abbott on flickr",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:UAL_A319_landing.jpg"
+  },
+  {
+    "type": "a319",
+    "file": "a319_4.jpg",
+    "credit": "Bill Abbott",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Airbus_A319_United_new_colors_rollout_(7359031984).jpg"
+  },
+  {
+    "type": "a320",
+    "file": "a320_3.jpg",
+    "credit": "Cory W. Watts from Madison, Wisconsin, United States of America",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_A320_(385589823).jpg"
+  },
+  {
+    "type": "a320",
+    "file": "a320_4.jpg",
+    "credit": "Hollywoodcory",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_at_YYC.jpg"
+  },
+  {
+    "type": "b757-200",
+    "file": "b757-200_4.jpg",
+    "credit": "Aero Icarus from Zürich, Switzerland",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:463vn_(4272449436).jpg"
+  },
+  {
+    "type": "b767-300er",
+    "file": "b767-300er_2.jpg",
+    "credit": "Aero Icarus from Zürich, Switzerland",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Boeing_767_of_United_Airlines_at_Zurich_International_Airport_(1).jpg"
+  },
+  {
+    "type": "b767-400er",
+    "file": "b767-400er_1.jpg",
+    "credit": "Bill Larkins",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Boeing_767_(United_Airlines)_at_San_Francisco_International_Airport.jpg"
+  },
+  {
+    "type": "b777-200er",
+    "file": "b777-200er_1.jpg",
+    "credit": "Bill Abbott",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Boeing_777-222_SFO_United_gray_over_blue_reverse_thrust_(5284880226)_(2).jpg"
+  },
+  {
+    "type": "b777-200er",
+    "file": "b777-200er_4.jpg",
+    "credit": "Brussels  Airport from Belgium",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_(5243941924).jpg"
+  },
+  {
+    "type": "b777-300er",
+    "file": "b777-300er_1.jpg",
+    "credit": "Bill Abbott",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_777_-300_ER_N2737U_departing_SFO_better_L1170971.jpg"
+  },
+  {
+    "type": "b787-9",
+    "file": "b787-9_1.jpg",
+    "credit": "Bill Abbott",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_787-9_Dreamliner_departing_SFO_(26804192250).jpg"
+  },
+  {
+    "type": "b787-9",
+    "file": "b787-9_2.jpg",
+    "credit": "Liam Thompson",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_787-9_N29991_@_LAX.jpg"
+  },
+  {
+    "type": "b787-10",
+    "file": "b787-10_2.jpg",
+    "credit": "MarcelX42",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frankfurt_Airport_United_Airlines_Boeing_787-10_Dreamliner_N14011_(DSC07721).jpg"
+  },
+  {
+    "type": "b787-10",
+    "file": "b787-10_3.jpg",
+    "credit": "MarcelX42",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frankfurt_Airport_United_Airlines_Boeing_787-10_Dreamliner_N14016_(DSC09867).jpg"
+  },
+  {
     "type": "b737-700",
     "file": "b737-700_1.jpg",
-    "credit": "Tom Ballard",
-    "license": "CC BY 2.0",
-    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737_at_PVG_(22997458064).jpg"
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-700_N15712_BWI_MD2.jpg"
   },
   {
     "type": "b737-700",
     "file": "b737-700_2.jpg",
-    "credit": "Kevin Paniagua",
+    "credit": "Acroterion",
     "license": "CC BY-SA 4.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Unos_Boeing_737_de_United_Airlines_en_la_Terminal_C.jpg"
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-700_N24715_BWI_MD1.jpg"
   },
   {
-    "type": "b737-800",
-    "file": "b737-800_1.jpg",
-    "credit": "Bill Abbott",
-    "license": "CC BY-SA 2.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Boeing_737-800,_United_merged_colors_with_winglets_(6991922660).jpg"
-  },
-  {
-    "type": "b737-800",
-    "file": "b737-800_2.jpg",
-    "credit": "DReifGalaxyM31",
-    "license": "CC BY 3.0",
-    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_aircraft_at_DIA_in_the_morning.JPG"
-  },
-  {
-    "type": "b737-800",
-    "file": "b737-800_3.jpg",
-    "credit": "Bernal Saborio from Costa Rica",
-    "license": "CC BY-SA 2.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Spectators_(8374476709).jpg"
-  },
-  {
-    "type": "b737-800",
-    "file": "b737-800_4.jpg",
-    "credit": "AlxSky",
+    "type": "b737-700",
+    "file": "b737-700_3.jpg",
+    "credit": "Acroterion",
     "license": "CC BY-SA 4.0",
-    "source": "https://commons.wikimedia.org/wiki/File:United_posici%C3%B3n_8.jpg"
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-700_N23708_BWI_MD1.jpg"
+  },
+  {
+    "type": "b737-900er",
+    "file": "b737-900er_1.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-900ER_N39475_departing_Boston_June_2025.jpg"
   }
 ]

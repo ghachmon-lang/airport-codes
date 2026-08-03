@@ -31,6 +31,24 @@ function stripHtml(s) {
   return (s || "").replace(/<[^>]*>/g, "").trim();
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Same politeness as fetch-photos.mjs: honor 429 Retry-After with backoff. */
+async function politeFetch(url, what) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const res = await fetch(url, { headers: UA });
+    if (res.status === 429) {
+      const wait = Math.max(Number(res.headers.get("retry-after")) || 0, attempt * 10) * 1000;
+      console.log(`⏳ rate-limited on ${what} — waiting ${wait / 1000}s`);
+      await sleep(wait);
+      continue;
+    }
+    if (!res.ok) throw new Error(`${what} ${res.status}`);
+    return res;
+  }
+  throw new Error(`${what} 429 (gave up after retries)`);
+}
+
 const url =
   "https://commons.wikimedia.org/w/api.php?" +
   new URLSearchParams({
@@ -41,8 +59,7 @@ const url =
     iiprop: "url|extmetadata|mime",
     iiurlwidth: String(WIDTH),
   });
-const res = await fetch(url, { headers: UA });
-if (!res.ok) throw new Error(`Commons API ${res.status}`);
+const res = await politeFetch(url, "Commons API");
 const page = Object.values((await res.json()).query?.pages || {})[0];
 const ii = page?.imageinfo?.[0];
 if (!ii) throw new Error(`no imageinfo for ${title}`);
@@ -61,8 +78,7 @@ while (taken.has(`${typeId}_${n}.jpg`) || taken.has(`${typeId}_${n}.png`)) n++;
 const ext = /png/i.test(ii.mime || "") ? "png" : "jpg";
 const file = `${typeId}_${n}.${ext}`;
 
-const img = await fetch(ii.thumburl || ii.url, { headers: UA });
-if (!img.ok) throw new Error(`download ${img.status}`);
+const img = await politeFetch(ii.thumburl || ii.url, "download");
 await writeFile(join(PHOTOS, file), Buffer.from(await img.arrayBuffer()));
 manifest.push({
   type: typeId,
