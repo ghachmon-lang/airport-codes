@@ -3,7 +3,7 @@
  * photos are cached on first view (they can be added/refreshed any time
  * by re-running tools/fetch-photos.mjs, so they're runtime-cached).
  */
-const CACHE = "type-ratings-v1";
+const CACHE = "type-ratings-v2";
 const CORE = [
   ".",
   "index.html",

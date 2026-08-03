@@ -25,10 +25,11 @@
           <code>tools/fetch-photos.mjs</code> (see README).
         </div>
 
-        <button class="btn play" id="play-btn">🔭 Start spotting</button>
+        <h2 class="section">Play</h2>
+        <div class="modes" id="modes"><!-- mode cards rendered by app.js --></div>
 
         <h2 class="section">Your fleet</h2>
-        <div class="hangar" id="hangar"><!-- plane cards rendered by app.js --></div>
+        <div class="hangar" id="hangar"><!-- groups + plane cards rendered by app.js --></div>
 
         <div class="home-foot">
           <label class="switch-row"><span>🔊 Sound</span>
@@ -53,8 +54,8 @@
         </div>
 
         <div class="fixup-tag" id="fixup-tag" hidden>🔁 Second look — you've got this</div>
-        <h2 class="q-prompt">What plane is this?</h2>
-        <div class="photo-box" id="photo-box"></div>
+        <h2 class="q-prompt" id="q-prompt">What plane is this?</h2>
+        <div id="q-body"><!-- photo / twin panels / clues rendered by app.js --></div>
         <div class="options" id="options"></div>
       </section>
 

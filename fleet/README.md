@@ -1,14 +1,33 @@
 # Corrine's Type Ratings ✈️🐕
 
 Sibling app to Flight Academy: learn to **recognize every plane in the United
-mainline fleet** before training starts. Plane Spotting prototype — a photo
-appears, you name the type, and every answer teaches the *spotting cue* that
-separates the lookalikes (737 vs A320, 777 vs 787…).
+mainline fleet** (17 types) before training starts.
 
-- **Adaptive rounds** — 8 photo questions; types you miss come up more often,
+## Four game modes
+
+- **🔭 Plane Spotting** — a photo appears, name the type. Every answer (right
+  or wrong) teaches the *spotting cue* that separates the lookalikes.
+- **👯 Twins** — two lookalikes side by side (737-800 vs MAX 8, A320 vs
+  A321neo, 767-300 vs -400…), tap the named one. Feedback teaches the one
+  tell that separates the pair. More pairs appear as the fleet unlocks.
+- **⚔️ Top Trumps** — two planes: which carries more? flies farther? is
+  longer? has two aisles? Comparisons are only asked when the gap is real
+  (≥12%), so there's always one defensible answer.
+- **🎭 Who Am I?** — three clues, vague → giveaway, reveal at your own pace.
+
+## The fleet tree
+
+17 types in 5 groups: **First Wings** (737-800, A320, 757-200, 777-300ER,
+787-9) → **The 737 Family** (-700, -900ER, MAX 8, MAX 9) → **The Airbus
+Corner** (A319, A321neo) → **Long-Haul Classics** (757-300, 767-300ER,
+-400ER) → **Widebody Flagships** (777-200ER, 787-8, 787-10). Get 5+ correct
+on every plane in a group to unlock the next.
+
+- **Adaptive rounds** — 8 questions; types you miss come up more often,
   misses are retried at the end so every round lands on a win.
 - **Type ratings** — 8 lifetime correct at ≥80% accuracy stamps the type.
-  Collect all 5 (more types coming: MAX 9, A321neo, 767s, the whole tree).
+  Only *recognition* modes (Spotting, Twins) count toward a rating, so a
+  stamp always means "knows it on sight."
 - Same no-backend PWA setup as the airport app: offline after one load,
   progress in localStorage.
 
@@ -54,8 +73,8 @@ a search term in `tools/fetch-photos.mjs` and re-run it.
 ```
 index.html      app shell (hangar / quiz / results / credits)
 styles.css      Flight Academy design system, photo-first
-js/data.js      the fleet: facts, spotting cues, silhouette proportions
-js/quiz.js      round builder: adaptive draw, rival-first distractors
+js/data.js      the fleet: facts, spotting cues, clues, twins, groups
+js/quiz.js      round builders for all 4 modes + fleet-tree unlock logic
 js/photos.js    photo manifest + rotation + placeholder silhouette renderer
 js/audio.js     synthesized sound effects (shared with the airport app)
 js/app.js       orchestrator

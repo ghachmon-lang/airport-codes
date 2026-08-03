@@ -28,11 +28,23 @@ const WIDTH = 1000; // downloaded thumb width (plenty for a phone screen)
 
 // Search terms tuned for United-livery, side-ish views.
 const SEARCHES = {
+  "b737-700": 'United Airlines Boeing 737-700',
   "b737-800": 'United Airlines Boeing 737-800',
+  "b737-900er": 'United Airlines Boeing 737-900ER',
+  "b737-max8": 'United Airlines Boeing 737 MAX 8',
+  "b737-max9": 'United Airlines Boeing 737 MAX 9',
+  "a319": 'United Airlines Airbus A319',
   "a320": 'United Airlines Airbus A320',
+  "a321neo": 'United Airlines Airbus A321neo',
   "b757-200": 'United Airlines Boeing 757-200',
+  "b757-300": 'United Airlines Boeing 757-300',
+  "b767-300er": 'United Airlines Boeing 767-300ER',
+  "b767-400er": 'United Airlines Boeing 767-400ER',
+  "b777-200er": 'United Airlines Boeing 777-200ER',
   "b777-300er": 'United Airlines Boeing 777-300ER',
+  "b787-8": 'United Airlines Boeing 787-8',
   "b787-9": 'United Airlines Boeing 787-9',
+  "b787-10": 'United Airlines Boeing 787-10',
 };
 
 const FREE = /(^|\b)(CC BY|CC BY-SA|CC0|Public domain)/i;

@@ -97,7 +97,44 @@ a { color: var(--blue); }
 }
 h2.section { font-size: 1.05rem; color: var(--navy); margin: 18px 0 10px; }
 
-.hangar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* mode cards */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-bottom-width: 5px;
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: left;
+  transition: transform 0.06s ease;
+}
+.mode-card:active { transform: translateY(3px); border-bottom-width: 2px; }
+.mode-card .mi { font-size: 1.5rem; }
+.mode-card .mn { font-weight: 900; color: var(--navy); font-size: 0.98rem; }
+.mode-card .md { font-size: 0.76rem; color: var(--muted); }
+.mode-card .ms {
+  position: absolute; top: 10px; right: 10px;
+  background: var(--green-bg); color: var(--green-dark);
+  font-weight: 800; font-size: 0.72rem;
+  border-radius: 999px; padding: 2px 8px;
+}
+
+/* fleet tree groups */
+.group-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  background: var(--blue); color: #fff;
+  border-radius: 12px; box-shadow: 0 4px 0 var(--blue-dark);
+  font-weight: 900; font-size: 0.92rem;
+  padding: 9px 14px; margin: 16px 0 10px;
+}
+.group-head.locked { background: var(--locked, #cfd6e2); box-shadow: 0 4px 0 #b4bcca; color: #5b6678; }
+.group-head .gh-hint { font-weight: 700; font-size: 0.72rem; text-align: right; }
+.hangar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .plane-card {
   background: var(--card);
   border-radius: var(--radius);
@@ -112,6 +149,11 @@ h2.section { font-size: 1.05rem; color: var(--navy); margin: 18px 0 10px; }
 .plane-name { font-weight: 800; font-size: 0.92rem; margin-top: 8px; }
 .plane-meta { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 .plane-card.rated .plane-meta { color: var(--gold-dark); font-weight: 700; }
+.plane-card.locked { opacity: 0.65; }
+.plane-card .art.mystery {
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 460 / 190; font-size: 2rem; color: #a8b3c6;
+}
 
 .home-foot {
   margin-top: 22px;
@@ -198,6 +240,40 @@ h2.section { font-size: 1.05rem; color: var(--navy); margin: 18px 0 10px; }
 .opt.good { background: var(--green-bg); border-color: var(--green); color: var(--green-dark); opacity: 1; }
 .opt.bad { background: var(--red-bg); border-color: var(--red); color: var(--red-dark); opacity: 1; }
 
+/* twins / top-trumps panels */
+.twin-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 8px; }
+.twin-panel {
+  background: var(--card);
+  border: 3px solid var(--line);
+  border-bottom-width: 5px;
+  border-radius: var(--radius);
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.05s ease;
+}
+.twin-panel:active { transform: translateY(2px); }
+.twin-panel:disabled { cursor: default; }
+.twin-panel .tp-art svg, .twin-panel .tp-art img { display: block; width: 100%; height: auto; }
+.twin-panel .tp-art img { aspect-ratio: 460 / 190; object-fit: cover; }
+.twin-panel .tp-label { font-weight: 800; font-size: 0.95rem; padding: 8px 10px; }
+.twin-panel.good { border-color: var(--green); }
+.twin-panel.good .tp-label { background: var(--green-bg); color: var(--green-dark); }
+.twin-panel.bad { border-color: var(--red); }
+.twin-panel.bad .tp-label { background: var(--red-bg); color: var(--red-dark); }
+
+/* riddle clues */
+.clues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.clue {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.clue.fresh { animation: pop 0.25s ease; }
+#more-clues { margin-bottom: 12px; }
+
 /* ---------- feedback footer ---------- */
 .feedback {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -252,6 +328,7 @@ h2.section { font-size: 1.05rem; color: var(--navy); margin: 18px 0 10px; }
   margin-bottom: 8px;
   animation: pop 0.3s ease;
 }
+.stamp-new.unlock { background: var(--sky); color: #fff; box-shadow: 0 4px 0 #2f6cb0; }
 
 /* ---------- credits ---------- */
 .credit-row {
