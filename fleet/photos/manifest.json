@@ -159,5 +159,89 @@
     "credit": "4300streetcar",
     "license": "CC BY 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-900ER_N39475_departing_Boston_June_2025.jpg"
+  },
+  {
+    "type": "b737-900er",
+    "file": "b737-900er_2.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-900ER_N62884_BWI_MD1.jpg"
+  },
+  {
+    "type": "b737-900er",
+    "file": "b737-900er_3.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-900ER_N36469_BWI_MD1.jpg"
+  },
+  {
+    "type": "b737-max8",
+    "file": "b737-max8_1.jpg",
+    "credit": "AVA Navigate",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737_MAX_8_N27366_@IND.jpg"
+  },
+  {
+    "type": "b737-max8",
+    "file": "b737-max8_2.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_737-8_MAX_N47293_on_final_approach_to_Boston_Oct_2024_1.jpg"
+  },
+  {
+    "type": "b737-max8",
+    "file": "b737-max8_3.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_737-8_MAX_N27268_BWI_MD1.jpg"
+  },
+  {
+    "type": "a321neo",
+    "file": "a321neo_1.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Airbus_A321neo_N14559_at_gate_B35A_at_Boston_July_2026.jpg"
+  },
+  {
+    "type": "a321neo",
+    "file": "a321neo_2.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airbus_A321neo_N54552_landing_at_San_Francisco_January_2026.jpg"
+  },
+  {
+    "type": "a321neo",
+    "file": "a321neo_3.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airbus_A321neo_N24508_departing_Boston_March_2025_1.jpg"
+  },
+  {
+    "type": "b757-200",
+    "file": "b757-200_1.jpg",
+    "credit": "Raimond Spekking",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_-_N515UA_-_Boeing_757-200_-_San_Francisco_International_Airport-0372.jpg"
+  },
+  {
+    "type": "b757-300",
+    "file": "b757-300_1.jpg",
+    "credit": "4300streetcar",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_757-300_N78866_take_off_from_Runway_27_Boston_Feb_2025.jpg"
+  },
+  {
+    "type": "b757-300",
+    "file": "b757-300_2.jpg",
+    "credit": "Glenn Beltz from Goleta, USA",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_Boeing_757-300_(N57864)_at_LAX_(22314611563).jpg"
+  },
+  {
+    "type": "b757-300",
+    "file": "b757-300_3.jpg",
+    "credit": "Raimond Spekking",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_-_N75861_-_Boeing_757-33N_-_San_Francisco_International_Airport-0373.jpg"
   }
 ]
