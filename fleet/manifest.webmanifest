@@ -1,0 +1,13 @@
+{
+  "name": "Corrine's Type Ratings",
+  "short_name": "Type Ratings",
+  "description": "Learn to recognize every plane in the United fleet",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f2f5fb",
+  "theme_color": "#0a3161",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

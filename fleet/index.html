@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a3161" />
+    <title>Corrine's Type Ratings</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <!-- ===== HOME (the hangar) ===== -->
+      <section id="home-screen" class="screen">
+        <header class="hero">
+          <div class="hero-dog">🐕</div>
+          <h1>Type Ratings</h1>
+          <p class="tagline">Know every plane in the United fleet — before day one of training.</p>
+          <div class="rated-chip">✈️ Type ratings earned: <b id="rated-count">0 / 5</b></div>
+        </header>
+
+        <div class="banner" id="ph-banner" hidden>
+          🖼️ Using placeholder art for now — add real photos with
+          <code>tools/fetch-photos.mjs</code> (see README).
+        </div>
+
+        <button class="btn play" id="play-btn">🔭 Start spotting</button>
+
+        <h2 class="section">Your fleet</h2>
+        <div class="hangar" id="hangar"><!-- plane cards rendered by app.js --></div>
+
+        <div class="home-foot">
+          <label class="switch-row"><span>🔊 Sound</span>
+            <label class="switch"><input type="checkbox" id="sound-toggle" /><span class="knob"></span></label>
+          </label>
+          <button class="btn ghost small" id="credits-btn">📷 Photo credits</button>
+          <button class="btn ghost small danger" id="reset-btn">🗑️ Reset progress</button>
+        </div>
+      </section>
+
+      <!-- ===== QUIZ ===== -->
+      <section id="quiz-screen" class="screen" hidden>
+        <div class="quiz-top">
+          <button class="quit-btn" id="quit-btn" aria-label="Quit round">✕</button>
+          <div class="quiz-bar"><div class="fill" id="quiz-fill"></div></div>
+          <div class="quiz-count" id="quiz-count">1 / 8</div>
+        </div>
+
+        <div class="maple">
+          <span class="dog">🐕</span>
+          <span class="bubble" id="maple-bubble" hidden></span>
+        </div>
+
+        <div class="fixup-tag" id="fixup-tag" hidden>🔁 Second look — you've got this</div>
+        <h2 class="q-prompt">What plane is this?</h2>
+        <div class="photo-box" id="photo-box"></div>
+        <div class="options" id="options"></div>
+      </section>
+
+      <!-- ===== RESULTS ===== -->
+      <section id="results-screen" class="screen" hidden>
+        <div class="results-wrap">
+          <div class="res-title" id="res-title">Round complete! 🛬</div>
+          <div class="rating-card">
+            <div class="rc-head"><span>UNITED FLEET ACADEMY</span><span>SPOTTING CHECK</span></div>
+            <div class="rc-body">
+              <div class="rc-stat"><div class="num" id="res-acc">0%</div><div class="lbl">First-try accuracy</div></div>
+              <div class="rc-stat"><div class="num" id="res-combo">0</div><div class="lbl">Best combo</div></div>
+            </div>
+            <div class="rc-foot" id="res-note">🐕 Maple approves.</div>
+          </div>
+          <div id="res-stamps"></div>
+          <button class="btn play" id="again-btn">🔭 Spot more planes</button>
+          <button class="btn ghost" id="home-btn">Back to the hangar</button>
+        </div>
+      </section>
+
+      <!-- ===== PHOTO CREDITS ===== -->
+      <section id="credits-screen" class="screen" hidden>
+        <h2 class="section">📷 Photo credits</h2>
+        <p class="muted">
+          Photos come from <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>
+          under free licenses. Thank you, plane spotters of the world.
+        </p>
+        <div id="credits-list"></div>
+        <button class="btn ghost" id="credits-back" style="width:100%">Back</button>
+      </section>
+    </main>
+
+    <!-- Answer feedback footer -->
+    <div class="feedback" id="feedback">
+      <div class="feedback-inner">
+        <div class="headline" id="fb-headline"></div>
+        <div class="spot-cue" id="fb-spot"></div>
+        <button class="btn" id="fb-continue">Continue</button>
+      </div>
+    </div>
+
+    <!-- Order matters: data + engines first, then the app that wires them up. -->
+    <script src="js/data.js"></script>
+    <script src="js/quiz.js"></script>
+    <script src="js/photos.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

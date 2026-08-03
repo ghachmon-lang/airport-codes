@@ -1,5 +1,9 @@
 # Corrine's Flight Academy ✈️🐕
 
+> **Sibling app:** [`fleet/`](fleet/) — *Corrine's Type Ratings*, a Plane
+> Spotting game for learning the United mainline fleet. Same design system,
+> same offline-PWA setup. See [`fleet/README.md`](fleet/README.md).
+
 A Duolingo-style game for learning **United's airport codes and destinations** — built
 for a flight-attendant trainee. No accounts, no backend, no cost: a self-contained
 PWA that runs offline and saves progress on the device.
