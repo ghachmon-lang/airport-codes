@@ -13,6 +13,11 @@
     <main id="app">
       <!-- ===== PATH (home) ===== -->
       <section id="path-screen" class="screen">
+        <!-- Mode switch: Academy teaches, Line Check checks. -->
+        <div class="mode-switch" role="group" aria-label="Game mode">
+          <button class="ms-btn active" data-mode="academy">🎓 Academy</button>
+          <button class="ms-btn" data-mode="linecheck">🎧 Line Check</button>
+        </div>
         <div class="topbar">
           <button class="stat-chip streak-chip" id="streak-chip" aria-label="Day streak">
             <span class="ico">🔥</span><span id="streak-num">0</span>
@@ -79,6 +84,74 @@
         </div>
       </section>
 
+      <!-- ===== LINE CHECK: ops board (home) ===== -->
+      <section id="lc-home-screen" class="screen lc" hidden>
+        <div class="mode-switch dark" role="group" aria-label="Game mode">
+          <button class="ms-btn" data-mode="academy">🎓 Academy</button>
+          <button class="ms-btn active" data-mode="linecheck">🎧 Line Check</button>
+        </div>
+        <div class="lc-head">
+          <div class="lc-kicker">CHECK AIRMAN ON BOARD</div>
+          <h1 class="lc-title">Line Check</h1>
+          <p class="lc-sub">
+            No options. No letter tiles. No route to narrow it down — just the question,
+            the way someone would ask you at the gate.
+          </p>
+          <div class="lc-stats" id="lc-stats"></div>
+        </div>
+        <div class="lc-menu" id="lc-menu"><!-- round cards rendered by app.js --></div>
+      </section>
+
+      <!-- ===== LINE CHECK: the runner ===== -->
+      <section id="lc-screen" class="screen lc" hidden>
+        <div class="lc-top">
+          <button class="quit-btn" id="lc-quit" aria-label="Leave line check">✕</button>
+          <div class="lc-bar"><div class="fill" id="lc-fill"></div></div>
+          <div class="lc-meta" id="lc-meta"></div>
+        </div>
+        <div class="lc-stage" id="lc-stage"><!-- skinned prompt + answer, rendered by app.js --></div>
+      </section>
+
+      <!-- ===== LINE CHECK: debrief ===== -->
+      <section id="lc-report-screen" class="screen lc" hidden>
+        <div class="report">
+          <div class="rep-head">
+            <div class="rep-kicker">LINE CHECK REPORT</div>
+            <div class="rep-verdict" id="rep-verdict">SATISFACTORY</div>
+            <div class="rep-sub" id="rep-sub"></div>
+          </div>
+          <div class="rep-grid">
+            <div class="rep-stat"><div class="num" id="rep-score">0</div><div class="lbl">Correct</div></div>
+            <div class="rep-stat"><div class="num" id="rep-acc">0%</div><div class="lbl">Accuracy</div></div>
+            <div class="rep-stat"><div class="num" id="rep-miles">+0</div><div class="lbl">Miles</div></div>
+          </div>
+          <div class="rep-list" id="rep-list"></div>
+          <button class="btn" id="rep-again" style="width:100%">Run another</button>
+          <button class="btn ghost" id="rep-done" style="width:100%">Back to ops</button>
+        </div>
+      </section>
+
+      <!-- ===== LINE CHECK: hand-the-phone-over deck ===== -->
+      <section id="lc-cards-screen" class="screen lc" hidden>
+        <div class="lc-top">
+          <button class="quit-btn" id="cards-quit" aria-label="Put the deck away">✕</button>
+          <div class="lc-bar"><div class="fill" id="cards-fill"></div></div>
+          <div class="lc-meta" id="cards-meta"></div>
+        </div>
+        <div class="qcard-wrap">
+          <div class="qcard" id="qcard">
+            <div class="qcard-role">📱 HAND THE PHONE OVER — READ THIS OUT LOUD</div>
+            <div class="qcard-q" id="qcard-q"></div>
+            <div class="qcard-a" id="qcard-a" hidden></div>
+            <button class="btn ghost" id="qcard-reveal" style="width:100%">Reveal the answer</button>
+            <div class="qcard-grade" id="qcard-grade" hidden>
+              <button class="btn red" id="qcard-miss">✗ Missed it</button>
+              <button class="btn" id="qcard-got">✓ Nailed it</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ===== PASSPORT ===== -->
       <section id="passport-screen" class="screen" hidden>
         <div class="passport-head">
@@ -99,6 +172,18 @@
           <div class="setting-row">
             <span>🔊 Sound effects</span>
             <label class="switch"><input type="checkbox" id="sound-toggle" /><span class="knob"></span></label>
+          </div>
+          <div class="setting-row">
+            <span>🎧 Line Check voice<br /><small class="muted" id="voice-status"></small></span>
+            <select id="voice-select" class="mini-select">
+              <option value="full">Speak &amp; listen</option>
+              <option value="prompts">Speak only</option>
+              <option value="off">Silent</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <span>🎲 Cold call on open<br /><small class="muted">One surprise question when you open the app</small></span>
+            <label class="switch"><input type="checkbox" id="coldopen-toggle" /><span class="knob"></span></label>
           </div>
           <div class="setting-row">
             <span>🎯 Daily goal (miles)</span>
@@ -149,6 +234,8 @@
     <script src="js/storage.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/linecheck.js"></script>
+    <script src="js/voice.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

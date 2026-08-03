@@ -8,7 +8,10 @@ A Duolingo-style game for learning **United's airport codes and destinations** �
 for a flight-attendant trainee. No accounts, no backend, no cost: a self-contained
 PWA that runs offline and saves progress on the device.
 
-## How the game works
+Two modes, one brain: **Academy** teaches, **Line Check** checks. The switch sits at
+the top of the home screen.
+
+## Academy mode 🎓 — how the game works
 
 - **The Flight Path** — 158 destinations grouped into 25 themed *routes* (The Hubs
   first, then Big East, West Coast Stars, Sunshine State… through Europe, Asia and
@@ -34,6 +37,45 @@ PWA that runs offline and saves progress on the device.
   re-checked right before they'd fade. Memory hooks ("ORD was ORcharD Field") appear
   when a code is introduced and after misses.
 
+## Line Check mode 🎧 — the one that transfers
+
+Academy trains *recognition inside a fixed context*: four options on screen, letter
+tiles that pre-give the three letters, a route that has already narrowed the answer
+to six airports, the same layout every time. That memory is bound to cues that don't
+exist when someone asks her at dinner. Line Check strips them:
+
+- **No multiple choice, ever.** She types the answer on a real keyboard, or says it.
+- **Interleaved.** Any airport she's met, in any order — the answer space is the whole
+  map, not one route.
+- **Crew-voice scenarios, never the same wording twice.** "A bag tag reads MSY — where
+  is it going?", "Ops radios: confirm destination Lisbon. Code?"
+- **The phone talks and listens.** Prompts are spoken aloud (codes spelled out, not
+  pronounced), and where the browser supports it she can answer out loud — letters
+  ("D-E-N"), phonetics ("delta echo november"), or the word. Typing always works too.
+- **The layout changes every question** — index card, bag tag, departure board, cabin
+  PA, plain text — so the layout can't become the cue either.
+
+Five ways to run it:
+
+| | |
+|---|---|
+| **Line check · 10 questions** | Cold calls, a trip sheet, a free-recall list |
+| **Ramp rush · 60s** | Bare city names, type as many codes as you can |
+| **Trip sheets** | `ORD → MSY → IAH` — name every stop |
+| **Free recall** | "Name four codes in Hawaii." No cue but the category |
+| **Quiz me** | Hand the phone to someone else; they read, they grade. The real test |
+
+Plus a **cold call on open**: occasionally the app's first screen is a single question,
+no warm-up — the closest thing to being asked out of the blue. (Settings can turn it off.)
+
+Grading is forgiving of real typing but never of the wrong airport: `ohare`, `Denvor`
+and `maui` all pass; `Chicago` alone asks *which one* (O'Hare or Midway) instead of
+guessing; `Los` is nudged to finish the name. None of those cost her anything.
+
+Both modes feed the same scheduler, streak and Sky Miles — but producing an answer
+cold counts double while a card is still being learned, because it's stronger evidence
+than picking one of four.
+
 ## Run locally
 
 ```bash
@@ -53,7 +95,7 @@ memory hooks. Edits never wipe progress (cards merge by code+direction).
 ## Project layout
 
 ```
-index.html      app shell (path / lesson / boarding pass / passport / settings)
+index.html      app shell (path / lesson / boarding pass / line check / passport / settings)
 styles.css      design system: 3D buttons, path nodes, boarding pass, confetti
 js/data.js      airports + route units + memory hooks (edit me)
 js/srs.js       spaced-repetition scheduler + streak/freeze logic
@@ -62,11 +104,11 @@ js/audio.js     synthesized sound effects (WebAudio, no assets)
 js/storage.js   persistence, export/import, v1→v2 migration
 js/app.js       the game orchestrator
 sw.js           offline cache
-tests/          node tests: srs.test.js, game.test.js
+tests/          node tests: srs.test.js, game.test.js, linecheck.test.js
 ```
 
 ## Tests
 
 ```bash
-node tests/srs.test.js && node tests/game.test.js
+node tests/srs.test.js && node tests/game.test.js && node tests/linecheck.test.js
 ```
