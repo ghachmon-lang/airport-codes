@@ -49,7 +49,14 @@
     { id: "globetrotter", emoji: "🌍", name: "Globetrotter", check: (s) => mastersIntl(s) >= 10 },
     { id: "best-friend", emoji: "🐕", name: "Maple's Best Friend", check: (s) => s.kisses >= 10 },
     { id: "chiefs-club", emoji: "🏆", name: "Chief's Club", check: (s) => UNITS.every((u) => unitStamped(s, u.id)) },
+    // ---- Line Check badges (mode 2) ----
+    { id: "line-check", emoji: "🎧", name: "First Line Check", check: (s) => lcStat(s, "rounds") >= 1 },
+    { id: "off-cuff", emoji: "🗣️", name: "Off the Cuff", check: (s) => lcStat(s, "rounds") >= 10 },
+    { id: "said-aloud", emoji: "🎤", name: "Said It Out Loud", check: (s) => lcStat(s, "spoken") >= 10 },
+    { id: "ramp-rush", emoji: "⏱️", name: "Ramp Rush", check: (s) => lcStat(s, "rushBest") >= 15 },
+    { id: "quizmaster", emoji: "📱", name: "Quizmaster", check: (s) => lcStat(s, "cards") >= 20 },
   ];
+  const lcStat = (s, key) => Number((s.lc || {})[key]) || 0;
 
   const CONN_SECONDS = 20; // tight-connection bonus window
   const CONN_MILES = 25;
@@ -169,12 +176,20 @@
   }
 
   // ---------- screens --------------------------------------------------------
-  const SCREENS = ["path-screen", "lesson-screen", "complete-screen", "passport-screen", "settings-screen"];
+  const SCREENS = [
+    "path-screen", "lesson-screen", "complete-screen", "passport-screen", "settings-screen",
+    "lc-home-screen", "lc-screen", "lc-report-screen", "lc-cards-screen",
+  ];
+  const FULL_SCREENS = ["lesson-screen", "complete-screen", "lc-screen", "lc-cards-screen"];
   function show(id) {
     SCREENS.forEach((s) => ($(s).hidden = s !== id));
-    $("tabbar").hidden = id === "lesson-screen" || id === "complete-screen";
+    $("tabbar").hidden = FULL_SCREENS.includes(id);
+    // Line Check screens take over the whole page chrome — that visual break is
+    // the point: she should never mistake one mode for the other.
+    document.body.classList.toggle("lc-mode", id.indexOf("lc-") === 0);
     clearInterval(connTimer);
     if (id !== "lesson-screen") clearInterval(bonusTimer);
+    if (id !== "lc-screen") stopLcTimers();
   }
 
   // ---------- topbar / path rendering ---------------------------------------
@@ -691,14 +706,7 @@
       Sfx.unlock();
     }
 
-    // badges
-    for (const b of BADGES) {
-      if (!state.badges[b.id] && b.check(state)) {
-        state.badges[b.id] = Date.now();
-        cheerQueue.push({ dog: b.emoji, msg: `Badge earned: ${b.name}! ${pick(CHEERS)}` });
-        Sfx.unlock();
-      }
-    }
+    awardBadges();
 
     // streak milestones
     if (streakGrew && [3, 7, 14, 30, 100].includes(state.streak.count)) {
@@ -853,6 +861,17 @@
     );
   }
 
+  // Award any newly-earned badges (shared by both modes).
+  function awardBadges() {
+    for (const b of BADGES) {
+      if (!state.badges[b.id] && b.check(state)) {
+        state.badges[b.id] = Date.now();
+        cheerQueue.push({ dog: b.emoji, msg: `Badge earned: ${b.name}! ${pick(CHEERS)}` });
+        Sfx.unlock();
+      }
+    }
+  }
+
   // ---------- confetti ---------------------------------------------------------
   function confetti(n) {
     const colors = ["#f0a500", "#58cc02", "#4a90d9", "#ff4b4b", "#1d4e9c", "#ff9ff3"];
@@ -888,6 +907,835 @@
     }
   });
 
+  /* ==========================================================================
+   * LINE CHECK — mode 2
+   *
+   * Academy asks the question the same way every time, inside a route that has
+   * already narrowed the answer to six airports, with the answer sitting on
+   * screen. That builds a memory bound to this app's cues.
+   *
+   * Line Check removes them: she types or says the answer, the questions are
+   * interleaved across everything she's seen, the wording changes every time,
+   * and the card's SKIN changes every question so the layout can't become the
+   * cue either. Same SRS brain, same miles — different retrieval path.
+   * ========================================================================== */
+
+  const lcIndex = LineCheck.buildAliasIndex(AIRPORTS); // alias -> codes, built once
+  let lc = null; // active Line Check round
+  let lcTimer = null; // Ramp Rush countdown
+  let lcMic = null; // live speech-recognition handle
+  let lcLastSkin = null;
+  let deck = null; // hand-the-phone-over card deck
+
+  const SKINS = [
+    { cls: "skin-plain", align: "center" },
+    { cls: "skin-note", align: "left" },
+    { cls: "skin-tag", align: "center" },
+    { cls: "skin-board", align: "left" },
+    { cls: "skin-pa", align: "center" },
+    { cls: "skin-pass", align: "left" },
+    { cls: "skin-bare", align: "left" },
+  ];
+
+  const RUSH_SECONDS = 60;
+
+  function stopLcTimers() {
+    clearInterval(lcTimer);
+    lcTimer = null;
+    stopMic();
+    if (typeof Voice !== "undefined") Voice.stopSpeaking();
+  }
+  function stopMic() {
+    if (lcMic) {
+      lcMic.stop();
+      lcMic = null;
+    }
+    if (typeof Voice !== "undefined") Voice.stopListening();
+    const btn = $("lc-mic");
+    if (btn) btn.classList.remove("listening");
+  }
+
+  const voiceMode = () => state.settings.voice || "full";
+  const canSpeak = () => voiceMode() !== "off" && typeof Voice !== "undefined" && Voice.supportsSpeak;
+  const canListen = () => voiceMode() === "full" && typeof Voice !== "undefined" && Voice.supportsListen;
+
+  /*
+   * The airports Line Check may ask about: everything she's already met in
+   * Academy. On a brand-new account that's empty, so the hubs stand in — this
+   * mode should never be a locked door.
+   */
+  function lcPool() {
+    const fam = familiarFn();
+    const pool = AIRPORTS.filter((a) => fam(a.code));
+    if (pool.length >= 6) return pool;
+    const starter = UNITS[0].codes.map((c) => byCode[c]);
+    const seen = new Set(pool.map((a) => a.code));
+    return pool.concat(starter.filter((a) => !seen.has(a.code)));
+  }
+
+  function lcGroups(pool) {
+    return LineCheck.buildGroups(UNITS, AIRPORTS, pool.map((a) => a.code));
+  }
+
+  /*
+   * Grade an answer into the scheduler.
+   *
+   * Producing an answer cold is stronger evidence than picking it out of four
+   * options, so while a card is still being LEARNED a Line Check hit counts
+   * twice. Once she knows it we grade once — the review interval should track
+   * what she's actually proven, not get inflated by the bonus.
+   */
+  function lcGradeSrs(code, dir, correct) {
+    const id = `${code}|${dir}`;
+    const item = state.items[id];
+    if (!item) return;
+    let updated = Srs.grade(item, correct);
+    if (correct && !Srs.isMastered(item) && !Srs.isMastered(updated)) updated = Srs.grade(updated, true);
+    state.items[id] = updated;
+    if (correct) state.correctTotal++;
+    if (correct && !item.learnedOnce && updated.learnedOnce) {
+      state.kisses++;
+      if (lc && !lc.learned.includes(code)) lc.learned.push(code);
+    }
+  }
+
+  function lcAddMiles(n) {
+    rolloverDay();
+    lc.miles += n;
+    state.miles += n;
+    state.day.miles += n;
+  }
+
+  // ---------- Line Check home (ops board) ------------------------------------
+  function renderLcHome() {
+    rolloverDay();
+    const pool = lcPool();
+    const s = state.lc || {};
+    $("lc-stats").innerHTML =
+      `<span class="pill">✈️ ${state.miles.toLocaleString()} miles</span>` +
+      `<span class="pill">🔥 ${state.streak.count}-day streak</span>` +
+      `<span class="pill">🎧 ${Number(s.rounds) || 0} line checks</span>` +
+      `<span class="pill">⏱️ Rush best ${Number(s.rushBest) || 0}</span>`;
+
+    const groups = lcGroups(pool);
+    const menu = [
+      { kind: "call", ico: "🎧", name: "Line check · 10 questions", desc: "Cold calls in plain language, a trip sheet, and a free-recall list. Type it or say it." },
+      { kind: "rush", ico: "⏱️", name: "Ramp rush · 60 seconds", desc: "Bare city names, as many codes as you can spell before the doors close." },
+      { kind: "sheets", ico: "🧾", name: "Trip sheets", desc: "Three legs at a time — read the routing, name every stop." },
+      { kind: "recall", ico: "🧠", name: "Free recall", desc: groups.length ? "“Name four codes in Hawaii.” No cue but the category." : "Fly a few more routes to unlock category recall.", off: !groups.length },
+      { kind: "cards", ico: "📱", name: "Quiz me — hand the phone over", desc: "Someone else reads the questions out loud. The real test." },
+    ];
+    $("lc-menu").innerHTML = menu
+      .map(
+        (m) => `<button class="lc-card ${m.off ? "dim" : ""}" data-kind="${m.kind}" ${m.off ? "disabled" : ""}>
+          <span class="ico">${m.ico}</span>
+          <span class="body"><span class="name">${m.name}</span><span class="desc">${escapeHtml(m.desc)}</span></span>
+          <span class="go">›</span></button>`
+      )
+      .join("");
+    $("lc-menu").querySelectorAll(".lc-card").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        Sfx.tick();
+        if (typeof Voice !== "undefined") Voice.warmUp(); // unlock iOS speech inside the tap
+        const kind = btn.dataset.kind;
+        if (kind === "cards") return startDeck();
+        startLineCheck(kind);
+      })
+    );
+  }
+
+  // ---------- building a round -----------------------------------------------
+  function startLineCheck(kind, opts = {}) {
+    const pool = lcPool();
+    if (!pool.length) return;
+    const groups = lcGroups(pool);
+    let questions = [];
+    if (kind === "call") {
+      questions = LineCheck.buildRound(pool, AIRPORTS, { length: 10, groups });
+    } else if (kind === "sheets") {
+      for (let i = 0; i < 5 && pool.length >= 3; i++) {
+        const legs = LineCheck.shuffleArr(pool).slice(0, 3);
+        questions.push(LineCheck.qChain(legs, Math.random() < 0.5 ? "CITY_TO_CODE" : "CODE_TO_CITY"));
+      }
+    } else if (kind === "recall") {
+      const gs = LineCheck.shuffleArr(groups).slice(0, 4);
+      questions = gs.map((g) => LineCheck.qList(g, 4));
+    } else if (kind === "cold") {
+      const a = pick(pool);
+      questions = [LineCheck.qColdCall(a, Math.random() < 0.5 ? "CITY_TO_CODE" : "CODE_TO_CITY")];
+    }
+    beginLineCheck({ kind, questions, pool, ...opts });
+  }
+
+  function beginLineCheck(cfg) {
+    lc = {
+      ...cfg,
+      qi: 0,
+      correct: 0,
+      wrong: 0,
+      miles: 0,
+      spoken: 0,
+      learned: [],
+      log: [],
+      answered: false,
+      rushLeft: RUSH_SECONDS,
+      rushScore: 0,
+    };
+    lcLastSkin = null;
+    $("lc-fill").style.width = "0%";
+    show("lc-screen");
+    if (cfg.kind === "rush") return startRush();
+    renderLcQuestion();
+  }
+
+  // ---------- rendering one question ------------------------------------------
+  function skinFor() {
+    let s = pick(SKINS);
+    if (lcLastSkin && s.cls === lcLastSkin && SKINS.length > 1) s = pick(SKINS.filter((x) => x.cls !== lcLastSkin));
+    lcLastSkin = s.cls;
+    return s;
+  }
+
+  function lcCurrent() {
+    return lc.questions[lc.qi] || null;
+  }
+
+  function lcMetaText() {
+    if (lc.kind === "rush") return `0:${String(lc.rushLeft).padStart(2, "0")}`;
+    if (lc.kind === "cold") return "COLD CALL";
+    return `${lc.qi + 1}/${lc.questions.length}`;
+  }
+
+  function renderLcQuestion() {
+    const q = lcCurrent();
+    if (!q) return finishLineCheck();
+    lc.answered = false;
+    stopMic();
+    const skin = skinFor();
+    $("lc-meta").textContent = lcMetaText();
+    $("lc-fill").style.width = Math.round((lc.qi / Math.max(1, lc.questions.length)) * 100) + "%";
+
+    const tag = q.tag ? `<span class="tag-line">${escapeHtml(q.tag)}</span>` : "";
+    let card = `<div class="skin ${skin.cls} ${skin.align}">${tag}<div>${escapeHtml(q.prompt)}</div></div>`;
+    let body = "";
+
+    if (q.type === "lc-chain") {
+      const askCode = q.dir === "CITY_TO_CODE";
+      body =
+        `<div class="legs">` +
+        q.legs
+          .map(
+            (leg, i) =>
+              `<div class="leg"><span class="n">Leg ${i + 1} · ${escapeHtml(askCode ? leg.cue || leg.city : leg.code)}</span>
+                <input class="lc-input ${askCode ? "code" : ""}" data-leg="${i}" ${inputAttrs(askCode)} />
+              </div>`
+          )
+          .join("") +
+        `</div><div class="lc-row"><button class="btn" id="lc-check">Check the sheet</button></div>`;
+    } else if (q.type === "lc-list") {
+      body = `<div class="chips" id="lc-chips"></div>
+        <input class="lc-input" id="lc-entry" placeholder="Type one, press enter…" ${inputAttrs(false)} />
+        <div class="lc-heard" id="lc-heard">0 of ${q.n}</div>
+        <div class="lc-row"><button class="btn" id="lc-check">Check my list</button></div>`;
+    } else {
+      const askCode = q.answerType === "code";
+      const mic = canListen() ? `<button class="mic-btn" id="lc-mic" aria-label="Answer out loud">🎙️</button>` : "";
+      const replay = canSpeak() ? `<button class="replay-btn" id="lc-replay">🔊 Hear it again</button>` : "";
+      body = `${replay}
+        <input class="lc-input ${askCode ? "code" : ""}" id="lc-entry" ${inputAttrs(askCode)}
+          placeholder="${askCode ? "___" : "the city…"}" />
+        <div class="lc-heard" id="lc-heard"></div>
+        <div class="lc-row">${mic}<button class="btn" id="lc-check">Check</button></div>`;
+    }
+
+    $("lc-stage").innerHTML = `<div id="lc-card">${card}</div><div class="lc-answer" id="lc-body">${body}</div><div id="lc-fb-slot"></div>`;
+    wireLcQuestion(q);
+  }
+
+  // Phone keyboards love to "help" — for a 3-letter code every one of those
+  // helpers (autocorrect, capitalisation, suggestions) is a cue we don't want.
+  function inputAttrs(isCode) {
+    const base = `autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go"`;
+    return isCode
+      ? `${base} maxlength="3" inputmode="text" autocapitalize="characters"`
+      : `${base} autocapitalize="words"`;
+  }
+
+  function wireLcQuestion(q) {
+    const check = $("lc-check");
+    if (check) check.addEventListener("click", () => submitLc());
+
+    if (q.type === "lc-list") {
+      const entry = $("lc-entry");
+      lc.entries = [];
+      entry.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const v = entry.value.trim();
+        if (!v) return submitLc();
+        lc.entries.push(v);
+        entry.value = "";
+        Sfx.tick();
+        renderChips(q);
+      });
+      entry.focus();
+      speakPrompt(q);
+      return;
+    }
+
+    if (q.type === "lc-chain") {
+      const inputs = [...$("lc-body").querySelectorAll("input")];
+      inputs.forEach((inp, i) =>
+        inp.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          if (i < inputs.length - 1) inputs[i + 1].focus();
+          else submitLc();
+        })
+      );
+      inputs[0].focus();
+      speakPrompt(q);
+      return;
+    }
+
+    const entry = $("lc-entry");
+    entry.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitLc();
+      }
+    });
+    const replay = $("lc-replay");
+    if (replay) replay.addEventListener("click", () => Voice.speak(q.speak));
+    const mic = $("lc-mic");
+    if (mic) mic.addEventListener("click", () => (lcMic ? stopMic() : listenForAnswer(q)));
+
+    // Hands-free: say the prompt, then open the mic. If she's typing instead,
+    // the keyboard is right there — both paths stay live.
+    if (canListen() && !lc.noAutoSpeak) speakPrompt(q).then(() => { if (!lc.answered && lcCurrent() === q) listenForAnswer(q); });
+    else {
+      entry.focus();
+      speakPrompt(q);
+    }
+  }
+
+  function speakPrompt(q) {
+    if (!canSpeak() || lc.noAutoSpeak) return Promise.resolve();
+    return Voice.speak(q.speak || q.prompt);
+  }
+
+  function renderChips(q) {
+    const wrap = $("lc-chips");
+    if (!wrap) return;
+    wrap.innerHTML = lc.entries
+      .map((e, i) => `<span class="chip" data-i="${i}">${escapeHtml(e)}<span class="x">✕</span></span>`)
+      .join("");
+    wrap.querySelectorAll(".chip").forEach((c) =>
+      c.addEventListener("click", () => {
+        if (lc.answered) return;
+        lc.entries.splice(Number(c.dataset.i), 1);
+        renderChips(q);
+      })
+    );
+    const heard = $("lc-heard");
+    if (heard) heard.textContent = `${lc.entries.length} of ${q.n}`;
+  }
+
+  // ---------- answering out loud -----------------------------------------------
+  function listenForAnswer(q) {
+    if (lc.answered) return;
+    const btn = $("lc-mic");
+    const heard = $("lc-heard");
+    if (btn) btn.classList.add("listening");
+    if (heard) heard.textContent = "Listening… say it out loud";
+    lcMic = Voice.listen({
+      onPartial: (t) => {
+        if (heard) heard.textContent = `“${t}”`;
+      },
+      onFinal: (best, alts) => {
+        if (lc.answered) return;
+        const entry = $("lc-entry");
+        let value = null;
+        if (q.answerType === "code") {
+          for (const alt of alts && alts.length ? alts : [best]) {
+            const parsed = LineCheck.parseSpokenCode(alt);
+            if (parsed) {
+              value = parsed;
+              break;
+            }
+          }
+        } else {
+          value = best;
+        }
+        if (heard) heard.textContent = `Heard: “${best}”`;
+        if (!value) return; // couldn't make a code of it — she can retry or type
+        if (entry) entry.value = value;
+        lc.viaVoice = true;
+        setTimeout(() => submitLc(), 120);
+      },
+      onError: (kind) => {
+        if (!heard) return;
+        if (kind === "not-allowed") heard.textContent = "Mic blocked — type it instead.";
+        else if (kind === "no-speech") heard.textContent = "Didn't catch that — tap 🎙️ or type it.";
+      },
+      onEnd: () => {
+        lcMic = null;
+        const b = $("lc-mic");
+        if (b) b.classList.remove("listening");
+      },
+    });
+  }
+
+  // ---------- grading ----------------------------------------------------------
+  function submitLc() {
+    if (!lc || lc.answered) return;
+    const q = lcCurrent();
+    if (!q) return;
+    stopMic();
+
+    if (q.type === "lc-list") return submitList(q);
+    if (q.type === "lc-chain") return submitChain(q);
+
+    const given = ($("lc-entry") || {}).value || "";
+    if (!String(given).trim()) return; // nothing typed — don't burn the question
+
+    if (q.answerType === "code") {
+      const res = LineCheck.gradeCode(given, q.answer);
+      lcGradeSrs(q.code, "CITY_TO_CODE", res.ok);
+      return resolveCall(q, res.ok, res.given || given);
+    }
+    const res = LineCheck.gradeCity(given, q.code, lcIndex, byCode);
+    if (res.partial) {
+      // She's started the right name — finish it. No penalty for a half-answer.
+      showLcFeedback("warn", "Keep going…", `“${String(given).trim()}” is the start of it.`, "Give me the whole name.", { retry: true });
+      return;
+    }
+    if (res.ambiguous) {
+      // "Chicago" is not wrong, it's under-specified — ask again, no penalty.
+      const others = res.matched.map((c) => byCode[c].city).join(" or ");
+      showLcFeedback("warn", "Which one?", `${others}?`, "Two airports share that city — name the one on the tag.", { retry: true });
+      return;
+    }
+    lcGradeSrs(q.code, "CODE_TO_CITY", res.ok);
+    resolveCall(q, res.ok, given, res);
+  }
+
+  function resolveCall(q, ok, given, res) {
+    lc.answered = true;
+    const entry = $("lc-entry");
+    if (entry) {
+      entry.disabled = true;
+      entry.classList.add(ok ? "ok" : "bad");
+    }
+    if (ok) {
+      lc.correct++;
+      if (lc.viaVoice) {
+        lc.spoken++;
+        state.lc.spoken = (Number(state.lc.spoken) || 0) + 1;
+      }
+      lcAddMiles(q.miles + (lc.viaVoice ? 5 : 0)); // saying it out loud pays extra
+      Sfx.correct(lc.correct);
+      if (navigator.vibrate) navigator.vibrate(18);
+      showLcFeedback("good", pick(["Correct.", "That's it.", "Nailed it.", "Yes — clean."]),
+        `${q.code} = ${byCode[q.code].city}`, lc.viaVoice ? "🎤 +5 miles for saying it out loud." : "");
+    } else {
+      lc.wrong++;
+      Sfx.wrong();
+      if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+      const detail = `${q.code} = ${byCode[q.code].city}`;
+      const wrongPlace = res && res.matched && res.matched.length === 1 ? `You said ${byCode[res.matched[0]].city}. ` : "";
+      const wasCode = res && res.wasCode ? "That's a code — I asked for the city. " : "";
+      showLcFeedback("bad", "Not this time.", detail, `${wasCode}${wrongPlace}${hookFor(q.code) ? "💡 " + hookFor(q.code) : "📝 Say it out loud three times."}`);
+    }
+    lc.log.push({ code: q.code, city: byCode[q.code].city, ok, given: String(given).toUpperCase() });
+    lc.viaVoice = false;
+  }
+
+  function submitChain(q) {
+    const inputs = [...$("lc-body").querySelectorAll("input")];
+    if (inputs.every((i) => !i.value.trim())) return;
+    lc.answered = true;
+    const askCode = q.dir === "CITY_TO_CODE";
+    let got = 0;
+    q.legs.forEach((leg, i) => {
+      const given = inputs[i].value;
+      const res = askCode ? LineCheck.gradeCode(given, leg.code) : LineCheck.gradeCity(given, leg.code, lcIndex, byCode);
+      inputs[i].disabled = true;
+      inputs[i].classList.add(res.ok ? "ok" : "bad");
+      // an under-specified city on a trip sheet counts as a miss for the leg,
+      // but never poisons the schedule for an airport she actually named
+      if (!res.ambiguous) lcGradeSrs(leg.code, askCode ? "CITY_TO_CODE" : "CODE_TO_CITY", res.ok);
+      if (res.ok) got++;
+      lc.log.push({ code: leg.code, city: leg.city, ok: res.ok, given: String(given).toUpperCase() });
+    });
+    const all = got === q.legs.length;
+    if (all) lc.correct++;
+    else lc.wrong++;
+    lcAddMiles(Math.round((q.miles * got) / q.legs.length));
+    if (all) Sfx.correct(lc.correct);
+    else Sfx.wrong();
+    const answerLine = q.legs.map((l) => `${l.code} = ${l.city}`).join(" · ");
+    showLcFeedback(all ? "good" : "bad", all ? "Whole sheet. 🧾" : `${got} of ${q.legs.length} legs.`, answerLine, "");
+  }
+
+  function submitList(q) {
+    const entry = $("lc-entry");
+    if (entry && entry.value.trim()) {
+      lc.entries.push(entry.value.trim());
+      entry.value = "";
+    }
+    if (!lc.entries.length) return;
+    lc.answered = true;
+    const graded = LineCheck.gradeList(lc.entries, { ...q.group, n: q.n }, lcIndex, byCode);
+    const wrap = $("lc-chips");
+    if (wrap) {
+      wrap.innerHTML = graded.results
+        .map((r) => `<span class="chip ${r.ok ? "ok" : "bad"}">${escapeHtml(r.text)}${r.ok ? " ✓" : " ✗"}</span>`)
+        .join("");
+    }
+    if (entry) entry.disabled = true;
+    // Correct recalls feed the scheduler; anything she DIDN'T name is not a
+    // miss — she was asked for four, not for all of them.
+    graded.correct.forEach((code) => lcGradeSrs(code, "CITY_TO_CODE", true));
+    const hit = graded.count >= q.n;
+    if (hit) lc.correct++;
+    else lc.wrong++;
+    lcAddMiles(12 * graded.count);
+    if (hit) Sfx.correct(lc.correct);
+    else Sfx.wrong();
+    graded.correct.forEach((code) => lc.log.push({ code, city: byCode[code].city, ok: true, given: code }));
+    const missedHint = q.group.codes
+      .filter((c) => !graded.correct.includes(c))
+      .slice(0, 4)
+      .map((c) => `${c} (${byCode[c].city})`)
+      .join(", ");
+    showLcFeedback(
+      hit ? "good" : "bad",
+      `${graded.count} of ${q.n} in ${q.group.label}`,
+      graded.correct.map((c) => `${c} = ${byCode[c].city}`).join(" · ") || "—",
+      missedHint ? `Also there: ${missedHint}` : ""
+    );
+  }
+
+  function showLcFeedback(kind, headline, detail, hint, { retry = false } = {}) {
+    const slot = $("lc-fb-slot");
+    const check = $("lc-check");
+    if (check && !retry) check.closest(".lc-row").hidden = true; // one button on screen at a time
+    slot.innerHTML = `<div class="lc-fb ${kind}">
+        <span class="big">${escapeHtml(headline)}</span>${escapeHtml(detail || "")}
+        ${hint ? `<span class="hint">${escapeHtml(hint)}</span>` : ""}
+      </div>
+      <div class="lc-row" style="margin-top:12px"><button class="btn ${retry ? "ghost" : ""}" id="lc-continue">${retry ? "Try again" : "Continue"}</button></div>`;
+    const btn = $("lc-continue");
+    btn.addEventListener("click", () => {
+      Sfx.tick();
+      if (retry) {
+        slot.innerHTML = "";
+        const e = $("lc-entry");
+        if (e) {
+          e.value = "";
+          e.focus();
+        }
+        return;
+      }
+      nextLc();
+    });
+    if (!retry) btn.focus({ preventScroll: true });
+    if (btn.scrollIntoView) setTimeout(() => btn.scrollIntoView({ block: "nearest", behavior: "smooth" }), 40);
+  }
+
+  function nextLc() {
+    if (!lc) return;
+    lc.qi++;
+    if (lc.qi >= lc.questions.length) return finishLineCheck();
+    renderLcQuestion();
+  }
+
+  // ---------- Ramp Rush --------------------------------------------------------
+  /*
+   * 60 seconds, bare city names, type the code. Speed is the point: it forces
+   * retrieval before she can reason her way there. Correct answers feed the
+   * scheduler; misses under a clock don't count against it.
+   */
+  function startRush() {
+    lc.rushLeft = RUSH_SECONDS;
+    $("lc-fill").style.width = "100%";
+    clearInterval(lcTimer);
+    lcTimer = setInterval(() => {
+      lc.rushLeft--;
+      $("lc-fill").style.width = Math.max(0, (lc.rushLeft / RUSH_SECONDS) * 100) + "%";
+      const meta = $("lc-meta");
+      meta.textContent = `0:${String(Math.max(0, lc.rushLeft)).padStart(2, "0")}`;
+      meta.classList.toggle("hot", lc.rushLeft <= 10);
+      if (lc.rushLeft <= 5 && lc.rushLeft > 0) Sfx.tick();
+      if (lc.rushLeft <= 0) {
+        clearInterval(lcTimer);
+        finishLineCheck();
+      }
+    }, 1000);
+    nextRushQ();
+  }
+
+  function nextRushQ() {
+    if (!lc || lc.kind !== "rush" || lc.rushLeft <= 0) return;
+    const a = pick(lc.pool);
+    const q = LineCheck.qColdCall(a, "CITY_TO_CODE", Math.random, { terse: true });
+    lc.questions = [q];
+    lc.qi = 0;
+    lc.answered = false;
+    const skin = skinFor();
+    $("lc-stage").innerHTML = `<div id="lc-card"><div class="skin ${skin.cls} center"><div>${escapeHtml(q.prompt)}</div></div></div>
+      <div class="lc-answer" id="lc-body">
+        <input class="lc-input code" id="lc-entry" ${inputAttrs(true)} placeholder="___" />
+        <div class="lc-heard" id="lc-heard">${lc.rushScore} correct</div>
+      </div><div id="lc-fb-slot"></div>`;
+    const entry = $("lc-entry");
+    entry.focus();
+    // auto-submit on the third letter — no Check button, no pause to reconsider
+    entry.addEventListener("input", () => {
+      const v = entry.value.replace(/[^a-zA-Z]/g, "");
+      if (v.length >= 3) gradeRush(q, v.slice(0, 3));
+    });
+    entry.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (entry.value.trim()) gradeRush(q, entry.value);
+      }
+    });
+  }
+
+  function gradeRush(q, given) {
+    if (lc.answered) return;
+    lc.answered = true;
+    const res = LineCheck.gradeCode(given, q.answer);
+    const entry = $("lc-entry");
+    if (entry) {
+      entry.disabled = true;
+      entry.classList.add(res.ok ? "ok" : "bad");
+    }
+    if (res.ok) {
+      lc.rushScore++;
+      lc.correct++;
+      lcGradeSrs(q.code, "CITY_TO_CODE", true);
+      lcAddMiles(q.miles);
+      Sfx.correct(lc.rushScore);
+    } else {
+      lc.wrong++;
+      Sfx.wrong();
+      $("lc-heard").textContent = `${q.city} = ${q.code}`;
+    }
+    lc.log.push({ code: q.code, city: q.city, ok: res.ok, given: String(given).toUpperCase() });
+    setTimeout(() => {
+      if (lc && lc.rushLeft > 0) nextRushQ();
+    }, res.ok ? 260 : 900);
+  }
+
+  // ---------- the debrief -------------------------------------------------------
+  function finishLineCheck() {
+    if (!lc) return;
+    stopLcTimers();
+    const asked = lc.correct + lc.wrong;
+    const acc = asked ? Math.round((100 * lc.correct) / asked) : 0;
+
+    state.lc.rounds = (Number(state.lc.rounds) || 0) + 1;
+    state.lc.best = Math.max(Number(state.lc.best) || 0, lc.correct);
+    if (lc.kind === "rush") state.lc.rushBest = Math.max(Number(state.lc.rushBest) || 0, lc.rushScore);
+
+    // A line check counts as a day flown — same streak, same daily goal.
+    const { streak, usedFreeze } = Srs.bumpStreakWithFreeze(state.streak, Date.now(), state.freezes);
+    const streakGrew = streak.count > state.streak.count || streak.lastDay !== state.streak.lastDay;
+    state.streak = streak;
+    if (usedFreeze) {
+      state.freezes--;
+      cheerQueue.push({ dog: "🌦️", msg: "Weather delay! Maple guarded your streak while you were away. 🐕⛑️" });
+    }
+    if (lc.learned.length) {
+      cheerQueue.push({ dog: "💋", msg: `Maple kiss — you produced ${lc.learned.join(", ")} cold. That one's yours now. 🐕` });
+    }
+    if (streakGrew && [3, 7, 14, 30, 100].includes(state.streak.count)) {
+      cheerQueue.push({ dog: "🔥", msg: `${state.streak.count} days on duty, Corrine! ${pick(CHEERS)}` });
+    }
+    awardBadges();
+    Store.saveState(state);
+
+    // cold open is a single question — no report screen, just get out of the way
+    if (lc.kind === "cold") {
+      goHome();
+      drainCheers();
+      lc = null;
+      return;
+    }
+
+    const verdict =
+      lc.kind === "rush"
+        ? `${lc.rushScore} IN 60`
+        : acc >= 100 ? "UNRESTRICTED" : acc >= 80 ? "SATISFACTORY" : acc >= 55 ? "SATISFACTORY · WITH NOTES" : "MORE LINE TIME";
+    $("rep-verdict").textContent = verdict;
+    $("rep-sub").textContent =
+      lc.kind === "rush"
+        ? `Personal best: ${state.lc.rushBest}. ${lc.rushScore >= state.lc.rushBest ? "That's a new one. ⏱️" : "Beat it next run."}`
+        : acc >= 80
+        ? "That's the version that works outside the app, Corrine. 🎧"
+        : "Every miss here is one that would've caught you at the gate — worth finding.";
+    $("rep-score").textContent = lc.kind === "rush" ? lc.rushScore : `${lc.correct}/${asked}`;
+    $("rep-acc").textContent = acc + "%";
+    $("rep-miles").textContent = "+" + lc.miles;
+
+    const misses = lc.log.filter((r) => !r.ok);
+    const rows = (misses.length ? misses : lc.log.slice(0, 6))
+      .map(
+        (r) => `<div class="rep-row ${r.ok ? "" : "miss"}">
+          <span class="mark">${r.ok ? "✓" : "✗"}</span>
+          <span class="code">${r.code}</span><span class="city">${escapeHtml(r.city)}</span>
+          ${r.ok || !r.given ? "" : `<span class="city" style="margin-left:auto">you said ${escapeHtml(r.given)}</span>`}
+        </div>`
+      )
+      .join("");
+    $("rep-list").innerHTML = (misses.length ? `<div class="lc-kicker" style="margin-top:6px">WORTH ANOTHER LOOK</div>` : "") + rows;
+
+    show("lc-report-screen");
+    Sfx.fanfare();
+    if (acc >= 80 || (lc.kind === "rush" && lc.rushScore >= 10)) confetti(acc >= 100 ? 80 : 40);
+    drainCheers();
+  }
+
+  // ---------- hand-the-phone-over deck --------------------------------------------
+  /*
+   * The failure this whole mode exists for is "someone asked me and I blanked".
+   * This is that, rehearsed: the phone shows a question for SOMEONE ELSE to read
+   * aloud, the answer stays hidden, and they grade her. It's the one place
+   * self-grading is honest, because a human is holding the card.
+   */
+  function startDeck() {
+    const pool = lcPool();
+    const cards = LineCheck.shuffleArr(pool)
+      .slice(0, 12)
+      .map((a) => LineCheck.qColdCall(a, Math.random() < 0.5 ? "CITY_TO_CODE" : "CODE_TO_CITY"));
+    deck = { cards, i: 0, got: 0 };
+    show("lc-cards-screen");
+    renderDeckCard();
+  }
+
+  function renderDeckCard() {
+    const q = deck.cards[deck.i];
+    if (!q) return finishDeck();
+    $("cards-meta").textContent = `${deck.i + 1}/${deck.cards.length}`;
+    $("cards-fill").style.width = Math.round((deck.i / deck.cards.length) * 100) + "%";
+    $("qcard-q").textContent = q.prompt;
+    $("qcard-a").textContent = `${q.code} = ${byCode[q.code].city}`;
+    $("qcard-a").hidden = true;
+    $("qcard-reveal").hidden = false;
+    $("qcard-grade").hidden = true;
+  }
+
+  function gradeDeckCard(ok) {
+    const q = deck.cards[deck.i];
+    lcGradeSrs(q.code, q.dir, ok);
+    state.lc.cards = (Number(state.lc.cards) || 0) + 1;
+    if (ok) {
+      deck.got++;
+      rolloverDay();
+      state.miles += 10;
+      state.day.miles += 10;
+      Sfx.correct(deck.got);
+    } else Sfx.wrong();
+    deck.i++;
+    Store.saveState(state);
+    renderDeckCard();
+  }
+
+  function finishDeck() {
+    awardBadges();
+    Store.saveState(state);
+    cheerQueue.push({
+      dog: "📱",
+      msg: `${deck.got}/${deck.cards.length} answered out loud to a real person. That's the one that counts, Corrine. ${pick(CHEERS)}`,
+    });
+    goHome();
+    drainCheers();
+    deck = null;
+  }
+
+  // ---------- cold open ------------------------------------------------------------
+  /*
+   * Occasionally the very first thing the app does is ask one question — no
+   * home screen, no warm-up. That's the closest we can get to being asked out
+   * of the blue, which is exactly the situation she wants to be ready for.
+   */
+  const COLD_OPEN_GAP_MS = 5 * 60 * 60 * 1000;
+  function maybeColdOpen() {
+    if (!state.settings.coldOpen) return false;
+    const last = Number(state.lc.lastColdOpen) || 0;
+    if (Date.now() - last < COLD_OPEN_GAP_MS) return false;
+    if (Math.random() > 0.45) return false;
+    const fam = familiarFn();
+    if (AIRPORTS.filter((a) => fam(a.code)).length < 6) return false; // nothing to ask yet
+    state.lc.lastColdOpen = Date.now();
+    Store.saveState(state);
+    // no autoplay on boot — browsers block it and it's startling; she taps 🔊
+    startLineCheck("cold", { noAutoSpeak: true });
+    return true;
+  }
+
+  // ---------- mode switching --------------------------------------------------------
+  function goHome() {
+    if (state.mode === "linecheck") {
+      renderLcHome();
+      show("lc-home-screen");
+    } else {
+      renderPath();
+      show("path-screen");
+    }
+    setTab("path");
+  }
+
+  function setMode(mode) {
+    state.mode = mode === "linecheck" ? "linecheck" : "academy";
+    Store.saveState(state);
+    document.querySelectorAll(".ms-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === state.mode));
+    goHome();
+  }
+
+  document.querySelectorAll(".ms-btn").forEach((b) =>
+    b.addEventListener("click", () => {
+      Sfx.tick();
+      if (typeof Voice !== "undefined") Voice.warmUp(); // first tap unlocks iOS speech
+      setMode(b.dataset.mode);
+    })
+  );
+
+  on("lc-quit", "click", () => {
+    if (lc && lc.qi > 0 && !confirm("Leave this line check? Your answers so far are saved.")) return;
+    stopLcTimers();
+    lc = null;
+    Store.saveState(state);
+    goHome();
+  });
+  on("cards-quit", "click", () => {
+    deck = null;
+    Store.saveState(state);
+    goHome();
+  });
+  on("rep-again", "click", () => {
+    Sfx.tick();
+    const kind = lc && lc.kind ? lc.kind : "call";
+    lc = null;
+    startLineCheck(kind);
+  });
+  on("rep-done", "click", () => {
+    Sfx.tick();
+    lc = null;
+    goHome();
+  });
+  on("qcard-reveal", "click", () => {
+    Sfx.tick();
+    $("qcard-a").hidden = false;
+    $("qcard-reveal").hidden = true;
+    $("qcard-grade").hidden = false;
+  });
+  on("qcard-got", "click", () => gradeDeckCard(true));
+  on("qcard-miss", "click", () => gradeDeckCard(false));
+
   // ---------- passport -----------------------------------------------------------
   function renderPassport() {
     const rank = RANKS.filter((r) => state.miles >= r.min).pop();
@@ -913,6 +1761,17 @@
   // ---------- settings -------------------------------------------------------------
   function renderSettings() {
     $("sound-toggle").checked = !!state.settings.sound;
+    const sel = $("voice-select");
+    sel.value = state.settings.voice || "full";
+    const noSpeak = typeof Voice === "undefined" || !Voice.supportsSpeak;
+    const noListen = typeof Voice === "undefined" || !Voice.supportsListen;
+    $("voice-status").textContent = noSpeak
+      ? "This browser can't speak — Line Check stays typed."
+      : noListen
+      ? "This browser can't listen — prompts are spoken, answers are typed."
+      : "The phone asks out loud and grades what you say back.";
+    sel.disabled = noSpeak;
+    $("coldopen-toggle").checked = !!state.settings.coldOpen;
     $("goal-input").value = state.settings.dailyGoal;
     $("freeze-status").textContent = `Banked: ${state.freezes}/2 — auto-protects a missed day`;
     $("freeze-btn").disabled = state.freezes >= 2 || state.miles < 200;
@@ -922,6 +1781,19 @@
     Sfx.muted = !state.settings.sound;
     Store.saveState(state);
     if (state.settings.sound) Sfx.correct(0);
+  });
+  on("voice-select", "change", (e) => {
+    const v = e.target.value;
+    state.settings.voice = ["full", "prompts", "off"].includes(v) ? v : "full";
+    Store.saveState(state);
+    if (state.settings.voice !== "off" && typeof Voice !== "undefined") {
+      Voice.warmUp();
+      Voice.speak("Ready when you are, Corrine.");
+    }
+  });
+  on("coldopen-toggle", "change", (e) => {
+    state.settings.coldOpen = e.target.checked;
+    Store.saveState(state);
   });
   on("goal-input", "change", (e) => {
     const v = parseInt(e.target.value, 10);
@@ -950,9 +1822,7 @@
       Store.saveState(state);
       Sfx.unlock();
       alert("Welcome back, Corrine! Progress restored. ✈️");
-      renderPath();
-      show("path-screen");
-      setTab("path");
+      goHome();
     } catch (err) {
       alert("Import failed: " + err.message);
     } finally {
@@ -964,9 +1834,8 @@
     state = Store.resetState();
     state.items = Srs.buildItems(AIRPORTS, {});
     Store.saveState(state);
-    renderPath();
-    show("path-screen");
-    setTab("path");
+    document.querySelectorAll(".ms-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === state.mode));
+    goHome();
   });
 
   // ---------- tabs / navigation ---------------------------------------------------
@@ -978,8 +1847,7 @@
       Sfx.tick();
       setTab(t.dataset.tab);
       if (t.dataset.tab === "path") {
-        renderPath();
-        show("path-screen");
+        goHome();
       } else if (t.dataset.tab === "passport") {
         renderPassport();
         show("passport-screen");
@@ -1040,6 +1908,7 @@
   }
 
   // ---------- boot -------------------------------------------------------------------
-  renderPath();
-  show("path-screen");
+  document.querySelectorAll(".ms-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === state.mode));
+  // A cold call can hijack the opening — that's the whole idea of it.
+  if (!maybeColdOpen()) goHome();
 })();

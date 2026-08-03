@@ -583,3 +583,306 @@ h2.section { margin: 10px 0 0; font-size: 1.05rem; color: var(--navy); }
   outline-offset: 2px;
 }
 .switch:focus-within .knob { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+/* ============================================================
+   LINE CHECK MODE
+   A deliberately different world: dark crew-ops chrome, no
+   option buttons anywhere, and a prompt card that changes its
+   skin every question so the LAYOUT never becomes the cue.
+   ============================================================ */
+
+/* Line Check palette: ops-room navy + a departure-board amber. */
+:root { --ops: #0d1522; --amber: #ffc247; }
+
+/* ---------- Mode switch ---------- */
+.mode-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: calc(8px + env(safe-area-inset-top, 0)) auto 0;
+  width: 100%;
+  max-width: 560px;
+  background: #e6ecf7;
+  border-radius: 999px;
+}
+.mode-switch.dark { background: rgba(255, 255, 255, 0.08); }
+.ms-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  border-radius: 999px;
+  padding: 10px 8px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  min-height: 42px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.mode-switch.dark .ms-btn { color: #9fb3d0; }
+.ms-btn.active { background: var(--card); color: var(--blue); box-shadow: 0 2px 6px rgba(10, 49, 97, 0.14); }
+.mode-switch.dark .ms-btn.active { background: var(--amber); color: #10151f; box-shadow: none; }
+
+/* Dark chrome takes over the whole page while Line Check is on screen. */
+body.lc-mode {
+  background: var(--ops);
+  color: #e8eefb;
+}
+body.lc-mode .tabbar { background: #121a29; border-top-color: #223149; }
+body.lc-mode .tab.active { background: #1e2b41; }
+body.lc-mode .muted { color: #93a4bf; }
+body.lc-mode .btn.ghost { background: transparent; color: var(--amber); border-color: #33445f; box-shadow: 0 4px 0 #22304a; }
+body.lc-mode .quit-btn { color: #8ea3c2; }
+
+/* ---------- Ops board (Line Check home) ---------- */
+.lc-head { padding: 18px 2px 2px; }
+.lc-kicker { font-size: 0.72rem; letter-spacing: 2.4px; font-weight: 800; color: var(--amber); }
+.lc-title { font-size: 2.1rem; margin: 4px 0 8px; letter-spacing: -0.5px; }
+.lc-sub { margin: 0; color: #9fb3d0; font-size: 0.95rem; line-height: 1.45; }
+.lc-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.lc-stats .pill {
+  background: #162032;
+  border: 1px solid #26344c;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #cfdcf2;
+}
+.lc-menu { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.lc-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: #162032;
+  border: 1px solid #26344c;
+  border-left: 5px solid var(--amber);
+  border-radius: 16px;
+  padding: 16px;
+  color: #e8eefb;
+  transition: transform 0.07s ease, border-color 0.15s ease;
+}
+.lc-card:active { transform: translateY(2px); }
+.lc-card.dim { opacity: 0.5; }
+.lc-card .ico { font-size: 1.7rem; line-height: 1; }
+.lc-card .body { flex: 1; display: flex; flex-direction: column; }
+.lc-card .name { font-weight: 800; font-size: 1.02rem; }
+.lc-card .desc { font-size: 0.84rem; color: #9fb3d0; margin-top: 3px; line-height: 1.35; }
+.lc-card .go { color: var(--amber); font-size: 1.3rem; }
+
+/* ---------- Runner chrome ---------- */
+.lc-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0));
+}
+.lc-bar { flex: 1; background: #22304a; border-radius: 999px; height: 10px; overflow: hidden; }
+.lc-bar .fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--amber);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lc-meta { font-size: 0.82rem; font-weight: 800; color: #9fb3d0; min-width: 54px; text-align: right; }
+.lc-meta.hot { color: var(--red); }
+.lc-stage { display: flex; flex-direction: column; gap: 16px; padding-top: 10px; }
+
+/* ---------- Prompt skins (one is picked at random per question) ---------- */
+.skin {
+  border-radius: 16px;
+  padding: 22px 18px;
+  font-size: 1.22rem;
+  font-weight: 700;
+  line-height: 1.45;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  animation: skin-in 0.22s ease;
+}
+@keyframes skin-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.skin .tag-line { font-size: 0.68rem; letter-spacing: 2px; font-weight: 800; opacity: 0.75; }
+.skin.left { text-align: left; }
+.skin.center { text-align: center; }
+
+/* plain: black text on a white card, like a flashcard someone hands you */
+.skin-plain { background: #fff; color: #10151f; }
+/* index card: ruled paper */
+.skin-note {
+  background: repeating-linear-gradient(#fffdf5, #fffdf5 27px, #dfe6f2 28px);
+  color: #10151f;
+  border-left: 4px solid #ff8f8f;
+}
+/* bag tag: airline yellow */
+.skin-tag { background: #ffd84d; color: #221a00; border: 2px dashed #7a6200; }
+/* departure board: amber on black, monospace */
+.skin-board {
+  background: #05070c;
+  color: #ffc247;
+  border: 1px solid #2a2f3c;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.5px;
+}
+/* PA: the cabin speaker */
+.skin-pa { background: linear-gradient(160deg, #1d4e9c, #0a3161); color: #fff; }
+/* boarding pass strip */
+.skin-pass { background: #fff; color: #10151f; border-top: 6px solid var(--blue); border-bottom: 6px dotted #c9d4e6; }
+/* text only — no card at all, the least scaffolded of them */
+.skin-bare { background: none; color: #e8eefb; padding: 10px 2px; font-size: 1.35rem; }
+
+/* ---------- Answering ---------- */
+.lc-answer { display: flex; flex-direction: column; gap: 10px; }
+.lc-input {
+  width: 100%;
+  background: #101a2b;
+  border: 2px solid #2c3d59;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  padding: 15px 16px;
+  font-family: inherit;
+}
+.lc-input:focus { outline: none; border-color: var(--amber); }
+.lc-input::placeholder { color: #5d7092; font-weight: 600; }
+.lc-input.code { text-transform: uppercase; letter-spacing: 10px; text-align: center; font-size: 1.7rem; }
+.lc-input.ok { border-color: var(--green); }
+.lc-input.bad { border-color: var(--red); }
+.lc-row { display: flex; gap: 10px; align-items: stretch; }
+.lc-row .btn { flex: 1; }
+.mic-btn {
+  width: 62px;
+  border-radius: 14px;
+  border: 2px solid #2c3d59;
+  background: #101a2b;
+  color: var(--amber);
+  font-size: 1.4rem;
+}
+.mic-btn.listening {
+  border-color: var(--red);
+  color: #fff;
+  background: var(--red);
+  animation: mic-pulse 1.1s ease-in-out infinite;
+}
+@keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.55); } 50% { box-shadow: 0 0 0 12px rgba(255, 75, 75, 0); } }
+.lc-heard { font-size: 0.85rem; color: #9fb3d0; min-height: 18px; font-weight: 600; }
+.replay-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--amber);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 8px 2px;
+  min-height: 40px;
+}
+
+/* free-recall chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: #1c2942;
+  border: 1px solid #33455f;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #e8eefb;
+}
+.chip.ok { background: rgba(88, 204, 2, 0.18); border-color: var(--green); color: #b6f08a; }
+.chip.bad { background: rgba(255, 75, 75, 0.16); border-color: var(--red); color: #ffb3b3; }
+.chip .x { opacity: 0.6; margin-left: 6px; }
+
+/* trip-sheet legs */
+.legs { display: flex; flex-direction: column; gap: 10px; }
+.leg { display: flex; align-items: center; gap: 10px; }
+.leg .n { font-size: 0.8rem; font-weight: 800; color: #9fb3d0; min-width: 74px; }
+.leg .lc-input { flex: 1; }
+
+/* ---------- Inline feedback (no sliding footer here — different on purpose) ---------- */
+.lc-fb {
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  animation: skin-in 0.18s ease;
+}
+.lc-fb.good { background: rgba(88, 204, 2, 0.16); border: 1px solid var(--green); color: #e0ffc6; }
+.lc-fb.bad { background: rgba(255, 75, 75, 0.15); border: 1px solid var(--red); color: #ffdada; }
+.lc-fb.warn { background: rgba(255, 194, 71, 0.13); border: 1px solid var(--amber); color: #ffe0a3; }
+.lc-fb .big { font-size: 1.05rem; font-weight: 800; display: block; margin-bottom: 4px; }
+.lc-fb .hint { font-weight: 600; font-size: 0.88rem; opacity: 0.9; display: block; margin-top: 6px; }
+
+/* ---------- Report ---------- */
+.report { display: flex; flex-direction: column; gap: 14px; padding-top: calc(18px + env(safe-area-inset-top, 0)); }
+.rep-head { text-align: center; }
+.rep-kicker { font-size: 0.72rem; letter-spacing: 2.4px; font-weight: 800; color: var(--amber); }
+.rep-verdict { font-size: 1.9rem; font-weight: 900; letter-spacing: -0.5px; margin-top: 6px; }
+.rep-sub { color: #9fb3d0; font-size: 0.92rem; margin-top: 4px; }
+.rep-grid { display: flex; gap: 10px; }
+.rep-stat { flex: 1; background: #162032; border: 1px solid #26344c; border-radius: 14px; padding: 14px 6px; text-align: center; }
+.rep-stat .num { font-size: 1.5rem; font-weight: 900; }
+.rep-stat .lbl { font-size: 0.72rem; letter-spacing: 1px; color: #9fb3d0; text-transform: uppercase; margin-top: 2px; }
+.rep-list { display: flex; flex-direction: column; gap: 8px; }
+.rep-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #131c2c;
+  border: 1px solid #22304a;
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 0.92rem;
+}
+.rep-row .mark { font-size: 1rem; }
+.rep-row.miss { border-color: #4a2530; background: #1d1420; }
+.rep-row .code { font-weight: 900; letter-spacing: 1px; }
+.rep-row .city { color: #9fb3d0; }
+
+/* ---------- Quiz-me deck ---------- */
+.qcard-wrap { display: flex; flex: 1; align-items: center; padding: 10px 0 20px; }
+.qcard {
+  width: 100%;
+  background: #fff;
+  color: #10151f;
+  border-radius: 22px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.qcard-role { font-size: 0.7rem; letter-spacing: 1.8px; font-weight: 800; color: var(--blue); text-align: center; }
+.qcard-q { font-size: 1.6rem; font-weight: 800; line-height: 1.3; text-align: center; padding: 12px 0; }
+.qcard-a {
+  font-size: 1.35rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--green-dark);
+  background: var(--green-bg);
+  border-radius: 14px;
+  padding: 14px;
+}
+.qcard-grade { display: flex; gap: 10px; }
+.qcard-grade .btn { flex: 1; }
+
+/* ---------- Settings extras ---------- */
+.mini-select {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+}
