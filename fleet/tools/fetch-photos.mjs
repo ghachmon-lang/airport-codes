@@ -72,10 +72,29 @@ function stripHtml(s) {
   return (s || "").replace(/<[^>]*>/g, "").trim();
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Be a polite API citizen: Wikimedia 429s aggressive clients. Space out
+ * requests and honor Retry-After with backoff. */
+async function politeFetch(url, what) {
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const res = await fetch(url, { headers: { "User-Agent": "TypeRatings/1.0 (personal study app; contact via github)" } });
+    if (res.status === 429) {
+      const wait = Math.max(Number(res.headers.get("retry-after")) || 0, attempt * 5) * 1000;
+      console.log(`  ⏳ rate-limited on ${what} — waiting ${wait / 1000}s`);
+      await sleep(wait);
+      continue;
+    }
+    if (!res.ok) throw new Error(`${what} ${res.status}`);
+    return res;
+  }
+  throw new Error(`${what} 429 (gave up after retries)`);
+}
+
 async function api(params) {
   const url = API + "?" + new URLSearchParams({ format: "json", origin: "*", ...params });
-  const res = await fetch(url, { headers: { "User-Agent": "TypeRatings/1.0 (personal study app)" } });
-  if (!res.ok) throw new Error(`Commons API ${res.status}`);
+  await sleep(400); // spacing between API calls
+  const res = await politeFetch(url, "Commons API");
   return res.json();
 }
 
@@ -201,8 +220,8 @@ async function candidatesFor(src) {
 }
 
 async function download(url, dest) {
-  const res = await fetch(url, { headers: { "User-Agent": "TypeRatings/1.0 (personal study app)" } });
-  if (!res.ok) throw new Error(`download ${res.status}`);
+  await sleep(900); // spacing between image downloads
+  const res = await politeFetch(url, "download");
   await writeFile(dest, Buffer.from(await res.arrayBuffer()));
 }
 
