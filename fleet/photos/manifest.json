@@ -243,5 +243,33 @@
     "credit": "Raimond Spekking",
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:United_Airlines_-_N75861_-_Boeing_757-33N_-_San_Francisco_International_Airport-0373.jpg"
+  },
+  {
+    "type": "b767-400er",
+    "file": "b767-400er_2.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_767-400ER_N66057_MD3.jpg"
+  },
+  {
+    "type": "b767-400er",
+    "file": "b767-400er_3.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_767-400ER_N76062_MD1.jpg"
+  },
+  {
+    "type": "b777-300er",
+    "file": "b777-300er_2.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_777-300ER_N2737U_IAD_VA1.jpg"
+  },
+  {
+    "type": "b777-300er",
+    "file": "b777-300er_3.jpg",
+    "credit": "Acroterion",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_Boeing_777-300ER_N2136U_IAD_VA1.jpg"
   }
 ]
