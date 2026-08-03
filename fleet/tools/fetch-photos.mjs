@@ -90,6 +90,8 @@ function toCandidates(data) {
             title: p.title,
             thumb: ii.thumburl || ii.url,
             mime: ii.mime,
+            width: ii.width || 0,
+            height: ii.height || 0,
             license: stripHtml(meta.LicenseShortName?.value),
             credit: stripHtml(meta.Artist?.value),
             source: ii.descriptionurl,
@@ -105,6 +107,25 @@ function toCandidates(data) {
     );
 }
 
+/*
+ * Photo taste, encoded. A good quiz photo is sharp, high-res, and a
+ * side-ish profile (landscape frame), not a nose-on ramp shot or a speck
+ * in the sky. We can't see the pixels from here, but resolution + aspect
+ * ratio + Commons' human "Quality images" vetting get surprisingly close.
+ */
+function score(c) {
+  let s = 0;
+  const ratio = c.height ? c.width / c.height : 0;
+  if (ratio >= 1.35 && ratio <= 2.3) s += 3; // classic side-profile framing
+  else if (ratio > 1.1) s += 1;
+  if (c.width >= 2000) s += 2;
+  else if (c.width >= 1200) s += 1;
+  if (c.quality) s += 4; // human-vetted Commons "Quality image"
+  if (/taking off|landing|takeoff|departing|arriving|taxi/i.test(c.title)) s += 1; // spotter shots
+  return s;
+}
+const rank = (cands) => cands.slice().sort((a, b) => score(b) - score(a));
+
 /* Primary source: members of a curated Commons category — these are filed
  * by humans as "this airline, this exact variant", so no Southwest strays. */
 async function categoryCandidates(cat) {
@@ -113,12 +134,28 @@ async function categoryCandidates(cat) {
     generator: "categorymembers",
     gcmtitle: "Category:" + cat,
     gcmtype: "file",
-    gcmlimit: "40",
+    gcmlimit: "60",
     prop: "imageinfo",
-    iiprop: "url|extmetadata|mime",
+    iiprop: "url|extmetadata|mime|size",
     iiurlwidth: String(WIDTH),
   });
   return toCandidates(data);
+}
+
+/* Best-in-class pass: files that are BOTH in the airline+type category AND
+ * in Commons' human-reviewed "Quality images" pool. */
+async function qualityCandidates(cat) {
+  const data = await api({
+    action: "query",
+    generator: "search",
+    gsrsearch: `incategory:"${cat}" incategory:"Quality images"`,
+    gsrnamespace: "6",
+    gsrlimit: "20",
+    prop: "imageinfo",
+    iiprop: "url|extmetadata|mime|size",
+    iiurlwidth: String(WIDTH),
+  });
+  return toCandidates(data).map((c) => ({ ...c, quality: true }));
 }
 
 /* Fallback: text search, but ONLY files whose own title says United and
@@ -131,7 +168,7 @@ async function searchCandidates(term) {
     gsrnamespace: "6",
     gsrlimit: "25",
     prop: "imageinfo",
-    iiprop: "url|extmetadata|mime",
+    iiprop: "url|extmetadata|mime|size",
     iiurlwidth: String(WIDTH),
   });
   return toCandidates(data).filter(
@@ -142,17 +179,25 @@ async function searchCandidates(term) {
 async function candidatesFor(src) {
   for (const cat of src.cats) {
     try {
-      const fromCat = await categoryCandidates(cat);
-      if (fromCat.length) {
-        console.log(`  📂 using category “${cat}” (${fromCat.length} usable files)`);
-        return fromCat;
+      // quality-vetted shots first, then the rest of the category, ranked
+      // by resolution + side-profile aspect; dedupe by title
+      const quality = await qualityCandidates(cat).catch(() => []);
+      const rest = await categoryCandidates(cat);
+      const seen = new Set(quality.map((c) => c.title));
+      const all = [...rank(quality), ...rank(rest.filter((c) => !seen.has(c.title)))];
+      if (all.length) {
+        console.log(
+          `  📂 category “${cat}”: ${all.length} usable files` +
+            (quality.length ? ` (${quality.length} human-vetted Quality images ⭐)` : "")
+        );
+        return all;
       }
     } catch (err) {
       console.error(`  ⚠️  category “${cat}”: ${err.message}`);
     }
   }
   console.log(`  🔎 no category hits — falling back to filtered search`);
-  return searchCandidates(src.search);
+  return rank(await searchCandidates(src.search));
 }
 
 async function download(url, dest) {
